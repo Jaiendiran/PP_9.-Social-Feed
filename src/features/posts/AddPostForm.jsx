@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { postAdded } from './postsSlice';
+import styles from './AddPostForm.module.css';
 
 function AddPostForm() {
   const [title, setTitle] = useState('');
@@ -16,21 +17,24 @@ function AddPostForm() {
   };
 
   return (
-    <section>
-      <h2>Add a New Post</h2>
+    <form className={styles.form}>
       <input
+        className={styles.input}
         type="text"
-        placeholder="Post title"
         value={title}
+        placeholder="Title"
         onChange={e => setTitle(e.target.value)}
       />
       <textarea
-        placeholder="Post content"
+        className={styles.textarea}
         value={content}
+        placeholder="Content"
         onChange={e => setContent(e.target.value)}
       />
-      <button onClick={onSavePostClicked}>Save Post</button>
-    </section>
+      <button className={styles.button} type="button" onClick={onSavePostClicked}>
+        Save Post
+      </button>
+    </form>
   );
 }
 

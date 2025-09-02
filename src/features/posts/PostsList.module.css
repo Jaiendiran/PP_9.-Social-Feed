@@ -1,0 +1,23 @@
+.postsList {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.postCard {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.postCard h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.postCard p {
+  margin-bottom: 0;
+  color: #666;
+}
