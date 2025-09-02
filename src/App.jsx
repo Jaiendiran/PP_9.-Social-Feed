@@ -1,14 +1,14 @@
-
-
+import React from 'react';
+import PostsList from './features/posts/PostsList';
+import AddPostForm from './features/posts/AddPostForm';
 
 function App() {
-
-
   return (
-    <>
-      <h1>App</h1>      
-    </>
-  )
+    <main>
+      <AddPostForm />
+      <PostsList />
+    </main>
+  );
 }
 
-export default App
+export default App;
