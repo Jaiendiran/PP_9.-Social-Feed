@@ -1,0 +1,14 @@
+.post {
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.notFound {
+  text-align: center;
+  padding: 2rem;
+  color: #999;
+}

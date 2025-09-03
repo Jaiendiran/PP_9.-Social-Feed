@@ -1,17 +1,32 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
-const initialState = [
-  { id: '1', title: 'First Post!', content: 'Hello!' },
-  { id: '2', title: 'Second Post', content: 'More text' }
-];
+
+export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
+  const response = await new Promise(resolve => {
+    setTimeout(() => {
+      resolve(
+        [
+          { id: '1', title: 'First Post!', content: 'Hello!' },
+          { id: '2', title: 'Second Post', content: 'More text' }
+        ]
+      );  
+    }, 1000);
+  });
+  return response;
+});
 
 const postsSlice = createSlice({
   name: 'posts',
-  initialState,
+  initialState: [],
   reducers: {
     postAdded(state, action) {
       state.push(action.payload);
     }
+  },
+  extraReducers: builder => {
+    builder.addCase(fetchPosts.fulfilled, (state, action) => {
+      return action.payload;
+    });
   }
 });
 

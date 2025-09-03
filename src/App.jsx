@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Home from './routes/Home';
 import NewPost from './routes/NewPost';
+import SinglePostPage from './features/posts/SinglePostPage';
 import styles from './App.module.css';
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/new" element={<NewPost />} />
+        <Route path='/posts/:postId' element={<SinglePostPage />} />
       </Routes>
     </Router>
   );
