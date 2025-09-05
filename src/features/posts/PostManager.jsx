@@ -28,7 +28,7 @@ function PostManager() {
     const id = postId || Date.now().toString();
     dispatch(savePost({ id, title, content }));
     setIsEditing(false);
-    navigate("/")
+    navigate("/PP_9.-Social-Feed/")
   };
 
   const handleDelete = () => {

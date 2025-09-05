@@ -11,7 +11,7 @@ function App() {
         <h1>Redux Blog</h1>
       </header>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="PP_9.-Social-Feed/" element={<Home />} />
         <Route path="/add" element={<PostManager />} />
         <Route path='/posts/:postId' element={<PostManager />} />
       </Routes>
