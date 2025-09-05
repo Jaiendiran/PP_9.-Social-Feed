@@ -1,0 +1,45 @@
+Okay, implement the below changes. 
+
+1. Bring back the Async Thunk, and also utilize the Indexed DB storage to save the posts. We'll use Thunk to get data from MongoDB later.
+
+2. Make entire post card clickable. 
+
+3. Add and align the edit and delete buttons or font icons to the right of each post. Provide the select all and delete all functionalities to the post list along with the checkbox to each post.
+
+------
+
+Prompt 4:
+"With the updated storage handling, ensure that when a user clicks on any individual post, only that single post is retrieved and displayed."
+
+Prompt 5:
+"Add functionality to edit an individual post using the existing AddPostForm.jsx. Like before, make sure both edit and delete options are available on each post in the list, as well as inside the individual post view."
+
+Prompt 6:
+"Merge AddPostForm.jsx and SinglePostPage.jsx into a single component that can handle adding a new post, viewing a post, and editing or deleting an existing post."
+
+Prompt 7:
+"Provide a minimal explanation of each change, clearly highlighting the tool-specific methods being used."
+
+-------
+
+// 8. Home.jsx already has useEffect which dispatches fetchPost. Why does it repeats in PostList.jsx file?
+
+Prompt 5:
+"Refactor each button into its own component, stored in a separate file. Apply a modern design/styling to these buttons."
+
+Prompt 6:
+"Enhance the 'Select All' button so that it toggles: if not all posts are selected, it selects them; if all posts are already selected, it deselects them. Also, add a separate 'Clear' button that clears the selected posts, but ensure this button remains disabled when all posts are selected."
+
+------
+
+Prompt 7:
+"In the Edit Post component, include an 'Edit' button. The post details should be read-only by default and become editable only when the user clicks the 'Edit' button. The Edit, Save, and Delete buttons should be horizontally aligned on the left side."
+
+Prompt 8:
+"Add a back arrow icon above the 'Edit Post' title on the edit page, allowing users to navigate back to the previous view."
+
+------
+
+9. Remove the Home and New Post links and its functionalities from the Navbar and update the navbar css.
+
+10. Add the New Post button component along with the Select All, and Delete Selected buttons.

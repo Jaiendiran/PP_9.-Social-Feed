@@ -1,23 +1,28 @@
 .postsList {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   padding: 1rem;
 }
 
 .postCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   background-color: #fff;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 8px;
   padding: 1rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  cursor: pointer;
 }
 
-.postCard h3 {
-  margin-top: 0;
-  color: #333;
+.postContent {
+  flex-grow: 1;
+  margin-left: 1rem;
 }
 
-.postCard p {
-  margin-bottom: 0;
-  color: #666;
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
