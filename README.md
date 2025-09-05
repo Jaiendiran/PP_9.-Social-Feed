@@ -1,12 +1,38 @@
-# React + Vite
+# React Blog Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This full-stack application is designed with scalability and modularity in mind. The current implementation focuses on the frontend, built using React and Redux Toolkit, with local data persistence using IndexedDB. The application allows users to create, edit, and delete posts, which are stored locally.
 
-Currently, two official plugins are available:
+## Current Implementation:
+ ### Frontend:
+  - Built with React for component-based UI development.
+  - State management handled using Redux Toolkit with slices and thunks.
+  - UI components include forms and views for creating, editing, and deleting posts.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+ ### Local Storage:
+  - Posts are stored in the browser using IndexedDB.
+  - IndexedDB interactions are abstracted into utility functions for modularity.
 
-## Expanding the ESLint configuration
+ ### Architecture:
+  - Modular structure with separation of concerns.
+  - Redux slices manage post state and asynchronous logic via thunks.
+  - Components are reusable and organized for scalability.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Upcoming Backend Integration:
+ ### Backend Stack:
+  - Node.js with Express.js for server-side logic.
+  - MongoDB for persistent data storage.
+
+ ### API Development:
+  - RESTful API endpoints for CRUD operations on posts.
+  - Middleware for validation and error handling.
+
+ ### Frontend Integration:
+  - Replace IndexedDB with real API calls using Redux thunks.
+  - Update slices to handle API responses and errors.
+
+ ### Optional Enhancements:
+  - User authentication and authorization.
+  - Pagination for post listings.
+  - Role-based access control for admin features.
+
+This documentation serves as a reference for the current state of the project and a roadmap for backend integration and future enhancements.
