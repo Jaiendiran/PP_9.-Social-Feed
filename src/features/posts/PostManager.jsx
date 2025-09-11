@@ -16,6 +16,7 @@ function PostManager() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(!postId);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (postId && post) {
@@ -24,7 +25,19 @@ function PostManager() {
     }
   }, [postId, post]);
 
+  const validate = () => {
+    const errs = {};
+    if (!title.trim()) errs.title = 'Title is required';
+    if (!content.trim()) errs.content = 'Content is required';
+    return errs;
+  };
+
   const handleSave = () => {
+    const errs = validate();
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      return;
+    }
     const id = postId || Date.now().toString();
     dispatch(savePost({ id, title, content }));
     setIsEditing(false);
@@ -39,7 +52,27 @@ function PostManager() {
     navigate("/");
   };
 
-  const handleEditToggle = () => setIsEditing(true);
+  const handleCancel = () => {
+    setTitle(post.title);
+    setContent(post.content);
+    setIsEditing(false);
+  };
+
+
+  const handleSetTitle = (value) => {
+    setTitle(value);
+    setErrors(prev => ({ ...prev, title: '' }));
+  };
+
+  const handleSetContent = (value) => {
+    setContent(value);
+    setErrors(prev => ({ ...prev, content: '' }));
+  };
+
+  const handleEditToggle = () => {
+    setIsEditing(true);
+    setErrors({});
+  };
 
   return (
     <div className={styles.container}>
@@ -52,8 +85,9 @@ function PostManager() {
             title={title}
             content={content}
             isEditing={isEditing}
-            setTitle={setTitle}
-            setContent={setContent}
+            setTitle={handleSetTitle}
+            setContent={handleSetContent}
+            errors={errors}
         />
         <PostActions
             postId={postId}
@@ -61,6 +95,7 @@ function PostManager() {
             onEditToggle={handleEditToggle}
             onSave={handleSave}
             onDelete={handleDelete}
+            onCancel={handleCancel}
             isModified={title !== post?.title || content !== post?.content}
         />
       </>

@@ -46,3 +46,88 @@
 .disabled {
   display: none;
 }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  font-size: 1rem;
+}
+
+.pageButton {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.pageButton:hover {
+  background-color: #eaeaea;
+}
+
+.pageButton:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.pageIndicator {
+  font-weight: 500;
+  color: #333;
+}
+
+.searchBarWrapper {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-grow: 1;
+}
+
+.searchInput {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 250px;
+  max-width: 100%;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.searchInput:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  outline: none;
+}
+
+.sortRow {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  font-weight: 500;
+  font-size: 1rem;
+  color: #333;
+  padding-left: 0.5rem;
+}
+
+.sortOption {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.sortOption:hover {
+  color: #007bff;
+}
+
+.sortIcon {
+  margin-left: 0.4rem;
+  font-size: 0.9rem;
+  color: orange;
+}
+

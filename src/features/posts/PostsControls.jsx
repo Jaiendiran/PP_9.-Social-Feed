@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -51,3 +51,54 @@ export function DeleteSelectedButton({ onDelete }) {
     </button>
   );
 }
+
+export function SortControls({ setSortBy }) {
+  return (
+    <div className={styles.sortRow}>
+      <span className={styles.sortOption} onClick={() => setSortBy('title')}>
+        Title <span className={styles.sortIcon}>🔽</span>
+      </span>
+      <span className={styles.sortOption} onClick={() => setSortBy('date')}>
+        Date <span className={styles.sortIcon}>🔽</span>
+      </span>
+    </div>
+  );
+}
+
+export function PaginationControls({ currentPage, totalPages, onPageChange }) {
+  return (
+    <div className={styles.pagination}>
+      <button
+        className={styles.pageButton}
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+      >
+        Prev
+      </button>
+
+      <span className={styles.pageIndicator}>Page {currentPage} of {totalPages}</span>
+
+      <button
+        className={styles.pageButton}
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+      >
+        Next
+      </button>
+    </div>
+  );
+}
+
+
+
+export function SearchBar({ onSearch }) {
+  return (
+    <input
+      type="text"
+      placeholder="Search posts..."
+      onChange={e => onSearch(e.target.value)}
+      className={styles.searchInput}
+    />
+  );
+}
+

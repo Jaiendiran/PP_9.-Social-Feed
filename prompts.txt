@@ -43,3 +43,23 @@ Prompt 8:
 9. Remove the Home and New Post links and its functionalities from the Navbar and update the navbar css.
 
 10. Add the New Post button component along with the Select All, and Delete Selected buttons.
+
+-------
+
+1. Backend-Driven Data Flow
+
+2. Authentication & Authorization
+
+3. Component-Driven UI
+
+4. State Management Strategy
+
+5. Persistence & Sync
+
+6. Error Handling & UX
+
+7. Testing & Deployment
+
+------- 
+
+

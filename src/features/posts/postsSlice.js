@@ -13,10 +13,14 @@ const getDB = async () => {
 };
 
 // Async thunk to load posts from IndexedDB
-export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
-  const db = await getDB();
-  const posts = await db.getAll(STORE_NAME);
-  return posts;
+export const fetchPosts = createAsyncThunk('posts/fetchPosts', async (_, { dispatch }) => {
+ try {
+    const db = await getDB();
+    return await db.getAll(STORE_NAME);
+  } catch (err) {
+    dispatch(setError('Failed to load posts.'));
+    throw err;
+  }
 });
 
 // Async thunk to save a post to IndexedDB

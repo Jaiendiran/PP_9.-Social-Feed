@@ -1,13 +1,14 @@
 import React from 'react';
 import styles from './PostAction.module.css';
 
-function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified }) {
+function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified, onCancel }) {
   return (
     <div className={styles.buttonGroup}>
       {postId && !isEditing && (
-        <button className={styles.button} onClick={onEditToggle}>
-          Edit
-        </button>
+        <>
+            <button className={styles.button} onClick={onEditToggle}> Edit </button>
+            <button className={styles.button} onClick={onCancel}> Cancel </button>
+        </>
       )}
       {isEditing && (
         <button

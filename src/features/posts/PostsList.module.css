@@ -23,6 +23,34 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1rem;
 }
+
+.searchBarWrapper {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+  flex-grow: 1;
+}
+
+.searchInput {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  width: 250px;
+  max-width: 100%;
+}
+
+.sortRow {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
