@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { openDB } from 'idb';
 
+
+// IndexedDB configuration
 const DB_NAME = 'PostDB';
 const STORE_NAME = 'posts';
 
@@ -11,7 +13,6 @@ const getDB = async () => {
     }
   });
 };
-
 // Async thunk to load posts from IndexedDB
 export const fetchPosts = createAsyncThunk('posts/fetchPosts', async (_, { dispatch }) => {
  try {
@@ -22,14 +23,13 @@ export const fetchPosts = createAsyncThunk('posts/fetchPosts', async (_, { dispa
     throw err;
   }
 });
-
 // Async thunk to save a post to IndexedDB
 export const savePost = createAsyncThunk('posts/savePost', async (post) => {
   const db = await getDB();
   await db.put(STORE_NAME, post);
   return post;
 });
-
+// Async thunk to delete a post to IndexedDB
 export const deletePosts = createAsyncThunk('posts/deletePosts', async (ids) => {
   const db = await getDB();
   const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -37,7 +37,7 @@ export const deletePosts = createAsyncThunk('posts/deletePosts', async (ids) => 
   await tx.done;
   return ids;
 });
-
+// Post slice
 const postsSlice = createSlice({
   name: 'posts',
   initialState: [],

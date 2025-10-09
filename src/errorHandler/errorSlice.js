@@ -1,5 +1,7 @@
+import { createSlice } from "@reduxjs/toolkit";
+
 const errorSlice = createSlice({
-  name: 'error',
+  name: 'errors',
   initialState: null,
   reducers: {
     setError: (_, action) => action.payload,

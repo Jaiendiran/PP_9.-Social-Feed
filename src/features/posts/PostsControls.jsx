@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft } from 'react-icons/fa';
-;
 
 export function BackArrow() {
   const navigate = useNavigate()
@@ -19,7 +18,7 @@ export function NewPostButton() {
 
   return (
     <button className={styles.button} onClick={() => navigate('/add')}>
-      + New Post
+      + Add Post
     </button>
   );
 }

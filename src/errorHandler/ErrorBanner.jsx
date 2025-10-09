@@ -2,14 +2,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { clearError } from './errorSlice';
 
 function ErrorBanner() {
-  const error = useSelector(state => state.error);
+  const errors = useSelector(state => state.errors);
   const dispatch = useDispatch();
 
-  if (!error) return null;
+  if (!errors) return null;
 
   return (
     <div className="error-banner">
-      {error}
+      {errors}
       <button onClick={() => dispatch(clearError())}>Dismiss</button>
     </div>
   );

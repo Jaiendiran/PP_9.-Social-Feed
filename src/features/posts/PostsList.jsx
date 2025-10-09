@@ -27,6 +27,7 @@ function PostsList() {
     dispatch(fetchPosts());
   }, [dispatch]);
 
+  // Control handlers
   const toggleSelectAll = () => {
     setSelectedIds(allSelected ? [] : posts.map(post => post.id));
   };

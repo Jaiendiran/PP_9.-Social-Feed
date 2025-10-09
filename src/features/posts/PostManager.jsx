@@ -8,9 +8,9 @@ import styles from './PostManager.module.css';
 import { BackArrow } from './PostsControls';
 
 function PostManager() {
-  const { postId } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { postId } = useParams();
   const post = useSelector(state => state.posts.find(p => p.id === postId));
 
   const [title, setTitle] = useState('');
