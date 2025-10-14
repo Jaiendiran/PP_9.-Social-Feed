@@ -20,6 +20,12 @@
   flex-grow: 1;
   margin-left: 1rem;
 }
+.postContent h3 {
+  margin: 0 0 0.5rem;
+}
+.postContent p {
+  margin: 0;
+}
 
 .actions {
   display: flex;
