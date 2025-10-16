@@ -4,21 +4,22 @@ import styles from './PostAction.module.css';
 function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified, onCancel }) {
   return (
     <div className={styles.buttonGroup}>
-      {postId && !isEditing && (
+      {(postId && !isEditing) && (
         <>
             <button className={styles.button} onClick={onEditToggle}> Edit </button>
-            <button className={styles.button} onClick={onCancel}> Cancel </button>
         </>
       )}
       {isEditing && (
-        <button
+        <>
+          <button
           className={styles.button}
           onClick={onSave}
           disabled={!isModified}
-          title={!isModified ? 'No changes to save' : 'Save changes'}
-        >
-          Save
-        </button>
+          >
+            Save
+          </button>
+          <button className={styles.button} onClick={onCancel}> Cancel </button>
+        </>
       )}
       {postId && (
         <button className={styles.deleteButton} onClick={onDelete}>

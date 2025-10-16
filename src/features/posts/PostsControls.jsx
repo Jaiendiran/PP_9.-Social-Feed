@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaArrowLeft, FaHome } from 'react-icons/fa';
+
+
+export function HomeBtn() {
+  const navigate = useNavigate()
+  return (
+    <div className={styles.homeIcon} onClick={() => navigate("/PP_9.-Social-Feed/?page=1")}>
+      <FaHome />
+    </div>
+  )
+}
 
 export function BackArrow() {
   const navigate = useNavigate()
@@ -38,7 +47,7 @@ export function ClearSelectionButton({ disabled, onClear }) {
       onClick={onClear}
       disabled={disabled}
     >
-      Clear Selection
+      Clear Selected
     </button>
   );
 }
@@ -64,12 +73,15 @@ export function SortControls({ setSortBy }) {
   );
 }
 
-export function PaginationControls({ currentPage, totalPages, onPageChange }) {
+export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams }) {
   return (
     <div className={styles.pagination}>
       <button
         className={styles.pageButton}
-        onClick={() => onPageChange(currentPage - 1)}
+        onClick={() => {
+          onPageChange(currentPage - 1);
+          setSearchParams(prev => ({...prev, page: currentPage - 1}));
+        }}
         disabled={currentPage === 1}
       >
         Prev
@@ -79,7 +91,10 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }) {
 
       <button
         className={styles.pageButton}
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => {
+          onPageChange(currentPage + 1);
+          setSearchParams(prev => ({...prev, page: currentPage + 1}));
+        }}
         disabled={currentPage === totalPages}
       >
         Next
@@ -87,8 +102,6 @@ export function PaginationControls({ currentPage, totalPages, onPageChange }) {
     </div>
   );
 }
-
-
 
 export function SearchBar({ onSearch }) {
   return (
@@ -101,3 +114,9 @@ export function SearchBar({ onSearch }) {
   );
 }
 
+export const formatDate = dateStr =>
+  new Date(dateStr).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });

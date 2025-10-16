@@ -5,7 +5,7 @@ import { savePost, deletePosts } from './postsSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import styles from './PostManager.module.css';
-import { BackArrow } from './PostsControls';
+import { BackArrow, formatDate } from './PostsControls';
 
 function PostManager() {
   const dispatch = useDispatch();
@@ -39,9 +39,9 @@ function PostManager() {
       return;
     }
     const id = postId || Date.now().toString();
-    dispatch(savePost({ id, title, content }));
+    dispatch(savePost({ id, title, content, createdAt: post ? post.createdAt : Date(Date.now())}));
     setIsEditing(false);
-    navigate("/PP_9.-Social-Feed/")
+    postId? null : navigate(-1);
   };
 
   const handleDelete = () => {
@@ -53,9 +53,14 @@ function PostManager() {
   };
 
   const handleCancel = () => {
-    setTitle(post.title);
-    setContent(post.content);
-    setIsEditing(false);
+    if (postId) {
+      setTitle(post.title);
+      setContent(post.content);
+      setIsEditing(false);
+      setErrors({});
+    } else {
+      navigate(-1);
+    }
   };
 
 
@@ -79,7 +84,12 @@ function PostManager() {
       <>
         <BackArrow />
 
-        <h2>{postId ? 'Edit Post' : 'Add New Post'}</h2>
+        <div className={styles.header}>
+          <h2>{postId ? (isEditing ? 'Edit Post' : 'View Post') : 'Add New Post'}</h2>
+          {postId && post && <p className={styles.createdAt}>Created on: {formatDate(post.createdAt)}</p>}
+        </div>
+
+        <div className={styles.divider}></div>
 
         <PostForm
             title={title}

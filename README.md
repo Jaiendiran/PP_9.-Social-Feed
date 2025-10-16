@@ -2,6 +2,8 @@
 
 This full-stack application is designed with scalability and modularity in mind. The current implementation focuses on the frontend, built using React and Redux Toolkit, with local data persistence using IndexedDB. The application allows users to create, edit, and delete posts, which are stored locally.
 
+### Link: https://jaiendiran.github.io/PP_9.-Social-Feed/
+
 ## Current Implementation:
  ### Frontend:
   - Built with React for component-based UI development.

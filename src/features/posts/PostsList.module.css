@@ -6,14 +6,18 @@
 }
 
 .postCard {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
   padding: 1rem;
-  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.postCard:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .postContent {
@@ -23,8 +27,14 @@
 .postContent h3 {
   margin: 0 0 0.5rem;
 }
-.postContent p {
+.postContent p.postMsg {
   margin: 0;
+}
+.postDate {
+  margin: 1.5rem 0 0;
+  font-size: 0.85rem;
+  color: #666;
+  font-style: italic;
 }
 
 .actions {
@@ -32,7 +42,7 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.2rem;
   margin-bottom: 1rem;
 }
 
@@ -60,3 +70,18 @@
   cursor: pointer;
 }
 
+.deleteIcon {
+   position: absolute;
+    right: 1rem;
+    color: red;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.deleteIcon:hover {
+  color: darkred;
+}
+
+.postCard:hover .deleteIcon {
+  opacity: 1;
+}
