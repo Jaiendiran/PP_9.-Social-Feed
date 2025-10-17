@@ -11,3 +11,11 @@ header {
   padding: 1rem;
   text-align: center;
 }
+
+/* Mobile CSS */ 
+@media (max-width: 600px) {
+  header {
+    padding: 0.75rem;
+    font-size: 1.25rem;
+  }
+}

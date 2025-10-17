@@ -1,4 +1,3 @@
-import React from 'react';
 import styles from './PostAction.module.css';
 
 function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified, onCancel }) {

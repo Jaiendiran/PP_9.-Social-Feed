@@ -13,7 +13,6 @@ function Home() {
 
   return (
     <section className={styles.home}>
-      <h2>All Posts</h2>
       <PostsList />
     </section>
   );

@@ -3,7 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, formatDate} from './PostsControls';
-import { FaTrash } from 'react-icons/fa';
+import { FaPlusCircle, FaTrash } from 'react-icons/fa';
+// import { IoIosAddCircle } from "react-icons/io";
 import styles from './PostsList.module.css';
 
 
@@ -70,9 +71,19 @@ function PostsList() {
     (currentPage - 1) * postsPerPage,
     currentPage * postsPerPage
   );
+  // Empty state handler
+  if (posts.length === 0) {
+    return (
+      <div className={styles.emptyState} onClick={() => navigate('/add')}>
+        <FaPlusCircle className={styles.addIcon} />
+        <span className={styles.buttonName}>Create New Post</span>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.postsList}>
+      <h2>All Posts</h2>
       <div className={styles.actions}>
         <HomeBtn />
         <NewPostButton />

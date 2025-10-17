@@ -4,8 +4,9 @@
   margin: auto;
 }
 
-.home h2 {
-  font-size: 1.8rem;
-  color: #333;
-  margin-bottom: 1rem;
+/* Mobile CSS */
+@media (max-width: 600px) {
+  .home {
+    padding: 1rem;
+  }
 }

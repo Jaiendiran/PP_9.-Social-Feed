@@ -149,3 +149,25 @@
   color: orange;
 }
 
+/* Mobile CSS */
+@media (max-width: 480px) {
+  .pagination {
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .pageButton {
+    padding: 0.3rem 0.6rem;
+  }
+
+  .searchInput {
+    width: 150px;
+    font-size: 0.9rem;
+  }
+
+  .sortRow {
+    flex-direction: column;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+}

@@ -1,4 +1,3 @@
-import React from 'react';
 import styles from './PostForm.module.css';
 
 function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
