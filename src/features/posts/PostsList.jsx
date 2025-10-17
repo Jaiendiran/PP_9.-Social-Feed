@@ -70,14 +70,6 @@ function PostsList() {
     (currentPage - 1) * postsPerPage,
     currentPage * postsPerPage
   );
-  // Empty state handler
-  if (posts.length === 0) {
-    return (
-      <div className={styles.emptyState}>
-        <button onClick={() => navigate('/add')}>+ Create New Post</button>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.postsList}>
