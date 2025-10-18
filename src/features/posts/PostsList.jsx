@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, formatDate} from './PostsControls';
+import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, FormatDate} from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
 // import { IoIosAddCircle } from "react-icons/io";
 import styles from './PostsList.module.css';
@@ -20,7 +20,7 @@ function PostsList() {
   const postsPerPage = 5;
   const isEmpty = posts.length === 0;
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('');
+  const [sortBy, setSortBy] = useState({key: 'date', order: 'asc'});
 
 
   useEffect(() => {
@@ -60,10 +60,19 @@ function PostsList() {
   );
   const postLength = filteredPosts.length > 0;
   // Sorting
-  const sortedPosts = [...filteredPosts].sort((a, b) =>
-    sortBy === 'title' ? a.title.localeCompare(b.title) :
-    sortBy === 'date' ? new Date(b.createdAt) - new Date(a.createdAt) : 0
-  );
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
+    if (sortBy.key === 'title') {
+      return sortBy.order === 'asc'
+        ? a.title.localeCompare(b.title)
+        : b.title.localeCompare(a.title);
+    }
+    if (sortBy.key === 'date') {
+      return sortBy.order === 'asc'
+        ? new Date(a.createdAt) - new Date(b.createdAt)
+        : new Date(b.createdAt) - new Date(a.createdAt);
+    }
+    return 0;
+  });
 
   const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
 
@@ -95,7 +104,7 @@ function PostsList() {
         </div>
       </div>
 
-      {postLength && <SortControls setSortBy={setSortBy} />}
+      {postLength && <SortControls sortBy={sortBy} setSortBy={setSortBy} />}
       {postLength || <p>No posts found.</p>}
 
       {paginatedPosts.map(post => (
@@ -113,7 +122,7 @@ function PostsList() {
           <div className={styles.postContent}>
             <h3>{post.title}</h3>
             <p className={styles.postMsg}>{post.content}</p>
-            <p className={styles.postDate}>{formatDate(post.createdAt)}</p>
+            <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
           </div>
           <FaTrash
             className={styles.deleteIcon}

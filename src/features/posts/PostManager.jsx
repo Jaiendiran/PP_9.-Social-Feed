@@ -5,7 +5,7 @@ import { savePost, deletePosts } from './postsSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import styles from './PostManager.module.css';
-import { BackArrow, formatDate } from './PostsControls';
+import { BackArrow, FormatDate } from './PostsControls';
 
 function PostManager() {
   const dispatch = useDispatch();
@@ -86,7 +86,7 @@ function PostManager() {
 
         <div className={styles.header}>
           <h2>{postId ? (isEditing ? 'Edit Post' : 'View Post') : 'Add New Post'}</h2>
-          {postId && post && <p className={styles.createdAt}>Created on: {formatDate(post.createdAt)}</p>}
+          {postId && post && <p className={styles.createdAt}>Created on: {FormatDate(post.createdAt)}</p>}
         </div>
 
         <div className={styles.divider}></div>

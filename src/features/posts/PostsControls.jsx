@@ -3,16 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHome } from 'react-icons/fa';
 
 
+// Home button component
 export function HomeBtn() {
   const navigate = useNavigate()
+
   return (
-    <div className={styles.homeIcon} onClick={() => navigate("/PP_9.-Social-Feed/?page=1")}>
+    <div className={styles.homeIcon} onClick={() => navigate('/PP_9.-Social-Feed/')}>
       <FaHome />
     </div>
   )
 }
-
-export function BackArrow() {
+// Back arrow component
+export function BackArrow({ currentPage }) {
   const navigate = useNavigate()
 
   return (
@@ -21,7 +23,7 @@ export function BackArrow() {
     </div>
   )
 }
-
+// New post button
 export function NewPostButton() {
   const navigate = useNavigate()
 
@@ -31,7 +33,7 @@ export function NewPostButton() {
     </button>
   );
 }
-
+// Select all button
 export function SelectAllButton({ allSelected, onToggle }) {
   return (
     <button className={styles.button} onClick={onToggle}>
@@ -39,7 +41,7 @@ export function SelectAllButton({ allSelected, onToggle }) {
     </button>
   );
 }
-
+// Clear selection button
 export function ClearSelectionButton({ disabled, onClear }) {
   return (
     <button
@@ -47,11 +49,11 @@ export function ClearSelectionButton({ disabled, onClear }) {
       onClick={onClear}
       disabled={disabled}
     >
-      Clear Selected
+      Clear Selection
     </button>
   );
 }
-
+// Delete selected button
 export function DeleteSelectedButton({ onDelete }) {
   return (
     <button className={styles.dangerButton} onClick={onDelete}>
@@ -59,20 +61,40 @@ export function DeleteSelectedButton({ onDelete }) {
     </button>
   );
 }
+// Sorting controls
+export function SortControls({ sortBy, setSortBy }) {
+  const toggleSort = key => {
+    setSortBy(prev => ({
+      key,
+      order: prev.key === key && prev.order === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
-export function SortControls({ setSortBy }) {
+  const getIcon = key => {
+    if (sortBy.key !== key) return '⬍';
+    return sortBy.order === 'asc' ? '🔼' : '🔽';
+  };
+
   return (
     <div className={styles.sortRow}>
-      <span className={styles.sortOption} onClick={() => setSortBy('title')}>
-        Title <span className={styles.sortIcon}>🔽</span>
-      </span>
-      <span className={styles.sortOption} onClick={() => setSortBy('date')}>
-        Date <span className={styles.sortIcon}>🔽</span>
-      </span>
+      <button
+        type="button"
+        className={styles.sortOption}
+        onClick={() => toggleSort('title')}
+      >
+        Title <span className={styles.sortIcon}>{getIcon('title')}</span>
+      </button>
+      <button
+        type="button"
+        className={styles.sortOption}
+        onClick={() => toggleSort('date')}
+      >
+        Date <span className={styles.sortIcon}>{getIcon('date')}</span>
+      </button>
     </div>
   );
 }
-
+// Pagination controls
 export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams }) {
   return (
     <div className={styles.pagination}>
@@ -80,7 +102,7 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
         className={styles.pageButton}
         onClick={() => {
           onPageChange(currentPage - 1);
-          setSearchParams(prev => ({...prev, page: currentPage - 1}));
+          setSearchParams({page: currentPage - 1});
         }}
         disabled={currentPage === 1}
       >
@@ -92,8 +114,8 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
       <button
         className={styles.pageButton}
         onClick={() => {
-          onPageChange(currentPage + 1);
-          setSearchParams(prev => ({...prev, page: currentPage + 1}));
+          onPageChange(currentPage + 1); 
+          setSearchParams({page: currentPage + 1});
         }}
         disabled={currentPage === totalPages}
       >
@@ -102,10 +124,11 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
     </div>
   );
 }
-
+// Search bar component
 export function SearchBar({ onSearch }) {
   return (
     <input
+      name='post search'
       type="text"
       placeholder="Search posts..."
       onChange={e => onSearch(e.target.value)}
@@ -113,10 +136,11 @@ export function SearchBar({ onSearch }) {
     />
   );
 }
-
-export const formatDate = dateStr =>
+// Date formatting utility
+export const FormatDate = dateStr =>
   new Date(dateStr).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
   });
+

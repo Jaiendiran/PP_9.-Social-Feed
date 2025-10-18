@@ -15,7 +15,6 @@
   color: #007bff;
 }
 
-
 .backIcon {
   display: flex;
   align-items: center;
@@ -133,9 +132,15 @@
 }
 
 .sortOption {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  cursor: pointer;
+  gap: 0.4rem;
+  color: #333;
   transition: color 0.2s ease;
 }
 
@@ -144,9 +149,7 @@
 }
 
 .sortIcon {
-  margin-left: 0.4rem;
   font-size: 0.9rem;
-  color: orange;
 }
 
 /* Mobile CSS */
