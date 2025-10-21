@@ -1,5 +1,7 @@
 # Add-Ons:
 - [x] Add date to each post at the bottom.
+- [ ] The posts should be filtered at the backend and only load the necessary posts.
+- [ ] 
 
 ## Steps to Complete:
 - [x] Remove unnecessary validation code from PostForm.jsx (useState errors, validate function, handleSave, onChange on form)
@@ -17,3 +19,4 @@
 - [x] When adding a new post from page 2 (or beyond), the user should remain on the same page instead of being redirected to page 1.
 - [x] Add a **Home (font icon)** next to the "All Posts" title.
 - [x] Add a **Delete (font icon)** for each individual post with delete functionality.
+- [ ] While doing a search, if we enter into a post and navigate back the search state resets.
