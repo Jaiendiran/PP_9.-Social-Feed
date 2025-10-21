@@ -4,7 +4,6 @@ import { fetchPosts, deletePosts } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, FormatDate} from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
-// import { IoIosAddCircle } from "react-icons/io";
 import styles from './PostsList.module.css';
 
 
