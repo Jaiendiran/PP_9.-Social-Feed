@@ -35,6 +35,21 @@ h2 {
   margin: 1rem 0 1.5rem;
 }
 
+/* .loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+} */
+
+.error {
+  color: #dc3545;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background-color: #fff;
+}
+
 /* Mobile CSS */
 @media (max-width: 480px) {
   .container {

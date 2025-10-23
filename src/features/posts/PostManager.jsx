@@ -1,22 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { savePost, deletePosts } from './postsSlice';
+import { savePost, deletePosts, selectPostById, selectPostsStatus, selectPostsError } from './postsSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
-import styles from './PostManager.module.css';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import { BackArrow, FormatDate } from './PostsControls';
+import styles from './PostManager.module.css';
 
 function PostManager() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { postId } = useParams();
-  const post = useSelector(state => state.posts.find(p => p.id === postId));
+  
+  // Use selectors for state management
+  const post = useSelector(state => selectPostById(state, postId));
+  const status = useSelector(selectPostsStatus);
+  const error = useSelector(selectPostsError);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(!postId);
   const [errors, setErrors] = useState({});
+
+  // Add this before the first useEffect
+  if (status === 'loading') {
+    return <LoadingSpinner />;
+  }
+
+  if (status === 'failed') {
+    return (
+      <div className={styles.container}>
+        <BackArrow />
+        <div className={styles.error}>Error: {error}</div>
+      </div>
+    );
+  }
+
+  if (postId && !post) {
+    return (
+      <div className={styles.container}>
+        <BackArrow />
+        <div className={styles.error}>Post not found</div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (postId && post) {
@@ -32,24 +60,39 @@ function PostManager() {
     return errs;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const errs = validate();
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       return;
     }
+
     const id = postId || Date.now().toString();
-    dispatch(savePost({ id, title, content, createdAt: post ? post.createdAt : Date(Date.now())}));
-    setIsEditing(false);
-    postId? null : navigate(-1);
+    const newPost = { 
+      id, 
+      title, 
+      content, 
+      createdAt: post ? post.createdAt : new Date().toISOString()
+    };
+
+    try {
+      await dispatch(savePost(newPost)).unwrap();
+      setIsEditing(false);
+      if (!postId) {
+        navigate(-1);
+      }
+    } catch (err) {
+      setErrors({ submit: err.message });
+    }
   };
 
-  const handleDelete = () => {
-    dispatch(deletePosts([postId]));
-    setTitle('');
-    setContent('');
-    setIsEditing(false);
-    navigate("/");
+  const handleDelete = async () => {
+    try {
+      await dispatch(deletePosts([postId])).unwrap();
+      navigate("/");
+    } catch (err) {
+      setErrors({ submit: err.message });
+    }
   };
 
   const handleCancel = () => {
@@ -91,22 +134,29 @@ function PostManager() {
 
         <div className={styles.divider}></div>
 
+        {errors.submit && (
+          <div className={styles.error}>
+            {errors.submit}
+          </div>
+        )}
+
         <PostForm
-            title={title}
-            content={content}
-            isEditing={isEditing}
-            setTitle={handleSetTitle}
-            setContent={handleSetContent}
-            errors={errors}
+          title={title}
+          content={content}
+          isEditing={isEditing}
+          setTitle={handleSetTitle}
+          setContent={handleSetContent}
+          errors={errors}
         />
         <PostActions
-            postId={postId}
-            isEditing={isEditing}
-            onEditToggle={handleEditToggle}
-            onSave={handleSave}
-            onDelete={handleDelete}
-            onCancel={handleCancel}
-            isModified={title !== post?.title || content !== post?.content}
+          postId={postId}
+          isEditing={isEditing}
+          onEditToggle={handleEditToggle}
+          onSave={handleSave}
+          onDelete={handleDelete}
+          onCancel={handleCancel}
+          isModified={title !== post?.title || content !== post?.content}
+          status={status}
         />
       </>
     </div>

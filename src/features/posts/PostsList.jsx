@@ -1,86 +1,52 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts } from './postsSlice';
+import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectPostsFilters, setSearchFilter, setSortBy, setCurrentPage, selectAllPosts } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, FormatDate} from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import styles from './PostsList.module.css';
 
 
 function PostsList() {
-  const posts = useSelector(state => state.posts);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState([]);
-  const allSelected = selectedIds.length === posts.length && posts.length > 0;
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' });
-  const initialPage = parseInt(searchParams.get('page')) || 1;
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const postsPerPage = 5;
-  const isEmpty = posts.length === 0;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState({key: 'date', order: 'asc'});
+  // Use new selectors
+  const status = useSelector(selectPostsStatus);
+  const error = useSelector(selectPostsError);
+  const allPosts = useSelector(selectAllPosts);
+  const paginatedPosts = useSelector(selectPaginatedPosts);
+  const filters = useSelector(selectPostsFilters);
+  
+  const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
+  const isEmpty = allPosts.length === 0;
 
-
-  useEffect(() => {
-    dispatch(fetchPosts());
-  }, [dispatch]);
-
-  useEffect(() => {
+  // Filter and sort handlers
+  const handleSearch = (query) => {
+    dispatch(setSearchFilter(query));
     setCurrentPage(1);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setCurrentPage(parseInt(initialPage));
-  }, [searchParams]);
-
-  // Control handlers
-  const toggleSelectAll = () => {
-    setSelectedIds(allSelected ? [] : posts.map(post => post.id));
   };
 
-  const clearSelection = () => setSelectedIds([]);
-
-  const deleteSelected = () => {
-    dispatch(deletePosts(selectedIds));
-    setSelectedIds([]);
+  const handleSort = (key, order) => {
+    dispatch(setSortBy({ key, order }));
   };
 
-  const toggleSelect = id => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+  const handlePageChange = (page) => {
+    dispatch(setCurrentPage(page));
+    setSearchParams({ page: page.toString() });
   };
 
-  // Post filteration
-  const filteredPosts = posts.filter(post =>
-    post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    post.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  const postLength = filteredPosts.length > 0;
-  // Sorting
-  const sortedPosts = [...filteredPosts].sort((a, b) => {
-    if (sortBy.key === 'title') {
-      return sortBy.order === 'asc'
-        ? a.title.localeCompare(b.title)
-        : b.title.localeCompare(a.title);
-    }
-    if (sortBy.key === 'date') {
-      return sortBy.order === 'asc'
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt);
-    }
-    return 0;
-  });
+  if (status === 'loading') {
+    return <LoadingSpinner />;
+  }
 
-  const totalPages = Math.ceil(sortedPosts.length / postsPerPage);
+  if (status === 'failed') {
+    return <div className={styles.error}>Error: {error}</div>;
+  }
 
-  const paginatedPosts = sortedPosts.slice(
-    (currentPage - 1) * postsPerPage,
-    currentPage * postsPerPage
-  );
-  // Empty state handler
-  if (posts.length === 0) {
+  if (isEmpty) {
     return (
       <div className={styles.emptyState} onClick={() => navigate('/add')}>
         <FaPlusCircle className={styles.addIcon} />
@@ -92,26 +58,24 @@ function PostsList() {
   return (
     <div className={styles.postsList}>
       <h2>All Posts</h2>
+
       <div className={styles.actions}>
         <HomeBtn />
         <NewPostButton />
         <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isEmpty} />
         <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-        {(selectedIds.length > 0 || isEmpty) && <DeleteSelectedButton onDelete={deleteSelected} />}
+        {(selectedIds.length > 0 || isEmpty) && ( <DeleteSelectedButton onDelete={deleteSelected} /> )}
         <div className={styles.searchBarWrapper}>
-          <SearchBar onSearch={setSearchQuery} />
+          <SearchBar onSearch={handleSearch} initialValue={filters.search} />
         </div>
       </div>
+      
+      <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
 
-      {postLength && <SortControls sortBy={sortBy} setSortBy={setSortBy} />}
-      {postLength || <p>No posts found.</p>}
+      {paginatedPosts.length === 0 && <p>No posts found.</p>}
 
       {paginatedPosts.map(post => (
-        <div
-          key={post.id}
-          className={styles.postCard}
-          onClick={() => navigate(`/posts/${post.id}?page=${currentPage}`)}
-        >
+        <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${currentPage}`)} >
           <input
             type="checkbox"
             checked={selectedIds.includes(post.id)}
@@ -133,7 +97,14 @@ function PostsList() {
         </div>
       ))}
 
-      {postLength && <PaginationControls currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} setSearchParams={setSearchParams} />}
+      {paginatedPosts.length > 0 && (
+        <PaginationControls 
+          currentPage={currentPage} 
+          totalPages={Math.ceil(allPosts.length / filters.itemsPerPage)} 
+          onPageChange={handlePageChange}
+          setSearchParams={setSearchParams} 
+        />
+      )}
     </div>
   );
 }
