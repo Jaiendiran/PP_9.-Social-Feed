@@ -1,7 +1,33 @@
-# Add-Ons:
-- [x] Add date to each post at the bottom.
-- [ ] The posts should be filtered at the backend and only load the necessary posts.
-- [ ] 
+# Improvements:
+    Testing Implementation (Step 11)
+        Add unit tests for reducers and selectors
+        Add integration tests for components
+        Test error handling and edge cases
+        Test caching mechanism
+
+    Performance Monitoring (Step 12)
+        Implement performance monitoring hooks
+        Add performance metrics collection
+        Monitor render cycles and component updates
+        Add debouncing for search and filters
+
+    Progressive Web App Features (Step 13)
+        Add service worker
+        Implement offline functionality
+        Add install prompt
+        Handle background sync
+
+    Accessibility Improvements (Step 14)
+        Add ARIA labels
+        Improve keyboard navigation
+        Add screen reader support
+        Enhance color contrast
+
+    Final Polish (Step 15)
+        Add animations and transitions
+        Implement skeleton loading
+        Add confirmation dialogs
+        Improve mobile responsiveness
 
 ## Steps to Complete:
 - [x] Remove unnecessary validation code from PostForm.jsx (useState errors, validate function, handleSave, onChange on form)

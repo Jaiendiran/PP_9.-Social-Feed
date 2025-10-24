@@ -13,35 +13,30 @@ const getDB = async () => {
     }
   });
 };
-// Async thunk to load posts from IndexedDB
-// export const fetchPosts = createAsyncThunk(
-//   'posts/fetchPosts',
-//   async (_, { rejectWithValue }) => {
-//     try {
-//       const db = await getDB();
-//       return await db.getAll(STORE_NAME);
-//     } catch (err) {
-//       return rejectWithValue('Failed to fetch posts: ' + err.message);
-//     }
-//   }
-// );
+// Async thunk to fetch posts from IndexedDB
 export const fetchPosts = createAsyncThunk(
   'posts/fetchPosts',
   async (_, { rejectWithValue }) => {
     try {
       // Check cache first
-      const cachedPosts = cacheUtils.get(cacheKeys.POSTS);
-      if (cachedPosts) {
-        return cachedPosts;
+      try {
+        const cachedPosts = cacheUtils.get(cacheKeys.POSTS);
+        if (cachedPosts) {
+          return cachedPosts;
+        }
+      } catch (cacheError) {
+        console.warn('Cache read failed, falling back to DB:', cacheError);
       }
-
-      // If no cache, fetch from IndexedDB
+      // If no cache or cache error, fetch from IndexedDB
       const db = await getDB();
       const posts = await db.getAll(STORE_NAME);
-      
       // Update cache
-      cacheUtils.set(cacheKeys.POSTS, posts);
-      
+      try {
+        cacheUtils.set(cacheKeys.POSTS, posts);
+      } catch (cacheError) {
+        console.warn('Cache write failed:', cacheError);
+      }
+
       return posts;
     } catch (err) {
       return rejectWithValue('Failed to fetch posts: ' + err.message);
@@ -49,27 +44,18 @@ export const fetchPosts = createAsyncThunk(
   }
 );
 // Async thunk to save a post to IndexedDB
-// export const savePost = createAsyncThunk(
-//   'posts/savePost',
-//   async (post, { rejectWithValue }) => {
-//     try {
-//       const db = await getDB();
-//       await db.put(STORE_NAME, post);
-//       return post;
-//     } catch (err) {
-//       return rejectWithValue('Failed to save post: ' + err.message);
-//     }
-//   }
-// );
 export const savePost = createAsyncThunk(
   'posts/savePost',
   async (post, { rejectWithValue }) => {
     try {
       const db = await getDB();
       await db.put(STORE_NAME, post);
-      
-      // Clear posts cache when we update data
-      cacheUtils.clear(cacheKeys.POSTS);
+      // Clear cache
+      try {
+        cacheUtils.clear(cacheKeys.POSTS);
+      } catch (cacheError) {
+        console.warn('Cache clear failed:', cacheError);
+      }
       
       return post;
     } catch (err) {
@@ -78,20 +64,6 @@ export const savePost = createAsyncThunk(
   }
 );
 // Async thunk to delete a post to IndexedDB
-// export const deletePosts = createAsyncThunk(
-//   'posts/deletePosts',
-//   async (ids, { rejectWithValue }) => {
-//     try {
-//       const db = await getDB();
-//       const tx = db.transaction(STORE_NAME, 'readwrite');
-//       await Promise.all(ids.map(id => tx.store.delete(id)));
-//       await tx.done;
-//       return ids;
-//     } catch (err) {
-//       return rejectWithValue('Failed to delete posts: ' + err.message);
-//     }
-//   }
-// );
 export const deletePosts = createAsyncThunk(
   'posts/deletePosts',
   async (ids, { rejectWithValue }) => {
@@ -100,8 +72,7 @@ export const deletePosts = createAsyncThunk(
       const tx = db.transaction(STORE_NAME, 'readwrite');
       await Promise.all(ids.map(id => tx.store.delete(id)));
       await tx.done;
-      
-      // Clear posts cache when we delete data
+      // Clear posts cache when we update data
       cacheUtils.clear(cacheKeys.POSTS);
       
       return ids;

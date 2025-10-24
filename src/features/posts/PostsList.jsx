@@ -23,6 +23,20 @@ function PostsList() {
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
 
+
+  useEffect(() => {
+    const loadPosts = async () => {
+      dispatch(fetchPosts());
+    };
+    loadPosts();
+    
+    // Cleanup function
+    return () => {
+      dispatch(setSearchFilter(''));
+      dispatch(setCurrentPage(1));
+    };
+  }, [dispatch]);
+
   // Filter and sort handlers
   const handleSearch = (query) => {
     dispatch(setSearchFilter(query));
@@ -36,6 +50,26 @@ function PostsList() {
   const handlePageChange = (page) => {
     dispatch(setCurrentPage(page));
     setSearchParams({ page: page.toString() });
+  };
+  
+  // Control handlers
+  const toggleSelectAll = () => {
+    setSelectedIds(allSelected ? [] : allPosts.map(post => post.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds([]);
+  };
+
+  const deleteSelected = () => {
+    dispatch(deletePosts(selectedIds));
+    setSelectedIds([]);
+  };
+
+  const toggleSelect = id => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
   };
 
   if (status === 'loading') {
