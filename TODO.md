@@ -45,4 +45,9 @@
 - [x] When adding a new post from page 2 (or beyond), the user should remain on the same page instead of being redirected to page 1.
 - [x] Add a **Home (font icon)** next to the "All Posts" title.
 - [x] Add a **Delete (font icon)** for each individual post with delete functionality.
-- [ ] While doing a search, if we enter into a post and navigate back the search state resets.
+- [ ] While searching in the 2nd page, the route should navigate to 1st page.
+- [ ] Pagination is not working properly.
+- [ ] The pagination should only be activated if the post length crosses 5.
+- [ ] Cache Utils is not working for blog_preferences.
+- [ ] The pagination navigates to the blank page.
+- [ ] 

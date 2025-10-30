@@ -5,7 +5,8 @@ import { savePost, deletePosts, selectPostById, selectPostsStatus, selectPostsEr
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { BackArrow, FormatDate } from './PostsControls';
+import { BackArrow } from './PostsControls';
+import { FormatDate } from '../../utils/formatDate';
 import styles from './PostManager.module.css';
 
 function PostManager() {
@@ -13,7 +14,6 @@ function PostManager() {
   const navigate = useNavigate();
   const { postId } = useParams();
   
-  // Use selectors for state management
   const post = useSelector(state => selectPostById(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
@@ -23,7 +23,7 @@ function PostManager() {
   const [isEditing, setIsEditing] = useState(!postId);
   const [errors, setErrors] = useState({});
 
-  // Add this before the first useEffect
+
   if (status === 'loading') {
     return <LoadingSpinner />;
   }

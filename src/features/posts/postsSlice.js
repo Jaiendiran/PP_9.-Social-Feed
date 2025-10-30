@@ -177,15 +177,10 @@ export const selectSortedAndFilteredPosts = createSelector(
     
     sortedPosts.sort((a, b) => {
       if (filters.sortBy === 'title') {
-        return filters.sortOrder === 'asc'
-          ? a.title.localeCompare(b.title)
-          : b.title.localeCompare(a.title);
+        return filters.sortOrder === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
       }
       // Default date sorting
-      return filters.sortOrder === 'asc'
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt);
-    });
+      return filters.sortOrder === 'asc' ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt); });
     
     return sortedPosts;
   }

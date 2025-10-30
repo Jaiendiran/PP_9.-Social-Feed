@@ -2,27 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectPostsFilters, setSearchFilter, setSortBy, setCurrentPage, selectAllPosts } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, FormatDate} from './PostsControls';
+import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { FormatDate } from '../../utils/formatDate';
 import styles from './PostsList.module.css';
-
 
 function PostsList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [selectedIds, setSelectedIds] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' });
-  // Use new selectors
+  const pageParam = parseInt(searchParams.get('page')) || 1;
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
   const allPosts = useSelector(selectAllPosts);
+  
   const paginatedPosts = useSelector(selectPaginatedPosts);
   const filters = useSelector(selectPostsFilters);
   
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
 
+
+  useEffect(() => {
+    dispatch(setCurrentPage(pageParam));
+  }, [pageParam, dispatch]);
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -51,7 +56,7 @@ function PostsList() {
     dispatch(setCurrentPage(page));
     setSearchParams({ page: page.toString() });
   };
-  
+
   // Control handlers
   const toggleSelectAll = () => {
     setSelectedIds(allSelected ? [] : allPosts.map(post => post.id));
@@ -67,9 +72,7 @@ function PostsList() {
   };
 
   const toggleSelect = id => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id] );
   };
 
   if (status === 'loading') {
@@ -109,7 +112,7 @@ function PostsList() {
       {paginatedPosts.length === 0 && <p>No posts found.</p>}
 
       {paginatedPosts.map(post => (
-        <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${currentPage}`)} >
+        <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
           <input
             type="checkbox"
             checked={selectedIds.includes(post.id)}
@@ -133,7 +136,7 @@ function PostsList() {
 
       {paginatedPosts.length > 0 && (
         <PaginationControls 
-          currentPage={currentPage} 
+          currentPage={pageParam} 
           totalPages={Math.ceil(allPosts.length / filters.itemsPerPage)} 
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams} 
