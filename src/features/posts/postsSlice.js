@@ -170,6 +170,7 @@ export const selectFilteredPosts = createSelector(
 );
 
 // Memoized selector for sorted and filtered posts
+// Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(
   [selectFilteredPosts, selectPostsFilters],
   (posts, filters) => {
@@ -177,10 +178,20 @@ export const selectSortedAndFilteredPosts = createSelector(
     
     sortedPosts.sort((a, b) => {
       if (filters.sortBy === 'title') {
-        return filters.sortOrder === 'asc' ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title);
+        return filters.sortOrder === 'asc'
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
       }
       // Default date sorting
-      return filters.sortOrder === 'asc' ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt); });
+      if (filters.sortBy === 'date') {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return filters.sortOrder === 'asc'
+          ? dateA - dateB
+          : dateB - dateA;
+      }
+      return 0;
+    });
     
     return sortedPosts;
   }

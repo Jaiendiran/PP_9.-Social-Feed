@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectPostsFilters, setSearchFilter, setSortBy, setCurrentPage, selectAllPosts } from './postsSlice';
+import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectPostsFilters, setSearchFilter, setSortBy, setCurrentPage, selectAllPosts, selectPostsPagination } from './postsSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
@@ -20,6 +20,7 @@ function PostsList() {
   
   const paginatedPosts = useSelector(selectPaginatedPosts);
   const filters = useSelector(selectPostsFilters);
+  const pagination = useSelector(selectPostsPagination);
   
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
@@ -45,7 +46,8 @@ function PostsList() {
   // Filter and sort handlers
   const handleSearch = (query) => {
     dispatch(setSearchFilter(query));
-    setCurrentPage(1);
+    dispatch(setCurrentPage(1));
+    setSearchParams({ page: '1' });
   };
 
   const handleSort = (key, order) => {
@@ -137,7 +139,7 @@ function PostsList() {
       {paginatedPosts.length > 0 && (
         <PaginationControls 
           currentPage={pageParam} 
-          totalPages={Math.ceil(allPosts.length / filters.itemsPerPage)} 
+          totalPages={Math.ceil(allPosts.length / pagination.itemsPerPage)} 
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams} 
         />

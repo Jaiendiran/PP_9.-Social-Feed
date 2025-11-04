@@ -62,17 +62,15 @@ export function DeleteSelectedButton({ onDelete }) {
   );
 }
 // Sorting controls
-export function SortControls({ sortBy, setSortBy }) {
+export function SortControls({ sortBy, sortOrder, onSort }) {
   const toggleSort = key => {
-    setSortBy(prev => ({
-      key,
-      order: prev.key === key && prev.order === 'asc' ? 'desc' : 'asc'
-    }));
+    const newOrder = (sortBy === key && sortOrder === 'asc') ? 'desc' : 'asc';
+    onSort(key, newOrder);
   };
 
   const getIcon = key => {
-    if (sortBy.key !== key) return '⬍';
-    return sortBy.order === 'asc' ? '🔼' : '🔽';
+    if (sortBy !== key) return '⬍';
+    return sortOrder === 'asc' ? '🔼' : '🔽';
   };
 
   return (
