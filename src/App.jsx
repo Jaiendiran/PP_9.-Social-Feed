@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './features/theme/ThemeProvider';
+import './styles/theme.css';
 import styles from './App.module.css';
 
 // Lazy load components
@@ -12,16 +14,18 @@ function App() {
   return (
     <Router>
       <ErrorBoundary>
-        <header className={styles.header}>
-          <h1>Redux Blog</h1>
-        </header>
-        <Suspense fallback={<LoadingSpinner size="large" />}>
-          <Routes>
-            <Route path="PP_9.-Social-Feed/" element={<Home />} />
-            <Route path="/add" element={<PostManager />} />
-            <Route path='/posts/:postId' element={<PostManager />} />
-          </Routes>
-        </Suspense>
+        <ThemeProvider>
+          <header className={styles.header}>
+            <h1>Redux Blog</h1>
+          </header>
+          <Suspense fallback={<LoadingSpinner size="large" />}>
+            <Routes>
+              <Route path="PP_9.-Social-Feed/" element={<Home />} />
+              <Route path="/add" element={<PostManager />} /> 
+              <Route path='/posts/:postId' element={<PostManager />} />
+            </Routes>
+          </Suspense>
+        </ThemeProvider>
       </ErrorBoundary>
     </Router>
   );

@@ -87,35 +87,14 @@ const postsAdapter = createEntityAdapter({
 });
 
 const initialState = postsAdapter.getInitialState({
-  status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-  error: null,
-  filters: {
-    search: '',
-    sortBy: 'date',
-    sortOrder: 'desc'
-  },
-  pagination: {
-    currentPage: 1,
-    itemsPerPage: 5
-  }
+  status: 'idle',
+  error: null
 });
 // Post slice
 const postsSlice = createSlice({
   name: 'posts',
   initialState,
-  reducers: {
-    setSearchFilter: (state, action) => {
-      state.filters.search = action.payload;
-    },
-    setSortBy: (state, action) => {
-      const { key, order } = action.payload;
-      state.filters.sortBy = key;
-      state.filters.sortOrder = order;
-    },
-    setCurrentPage: (state, action) => {
-      state.pagination.currentPage = action.payload;
-    }
-  },
+  reducers:{},
   extraReducers: builder => {
     builder
       // Fetch posts cases
@@ -152,54 +131,37 @@ export const {
 // Additional selectors for status, error, filters, and pagination
 export const selectPostsStatus = state => state.posts.status;
 export const selectPostsError = state => state.posts.error;
-export const selectPostsFilters = state => state.posts.filters;
-export const selectPostsPagination = state => state.posts.pagination;
 
-// Memoized selector for filtered posts
-export const selectFilteredPosts = createSelector(
-  [selectAllPosts, selectPostsFilters],
-  (posts, filters) => {
-    if (!filters.search) return posts;
-    
-    const searchLower = filters.search.toLowerCase();
-    return posts.filter(post => 
-      post.title.toLowerCase().includes(searchLower) ||
-      post.content.toLowerCase().includes(searchLower)
-    );
-  }
-);
-
-// Memoized selector for sorted and filtered posts
 // Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(
-  [selectFilteredPosts, selectPostsFilters],
+  [selectAllPosts, (state) => state.preferences.filters],
   (posts, filters) => {
-    const sortedPosts = [...posts];
+    let filteredPosts = posts;
     
-    sortedPosts.sort((a, b) => {
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredPosts = posts.filter(post => 
+        post.title.toLowerCase().includes(searchLower) ||
+        post.content.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return [...filteredPosts].sort((a, b) => {
       if (filters.sortBy === 'title') {
         return filters.sortOrder === 'asc'
           ? a.title.localeCompare(b.title)
           : b.title.localeCompare(a.title);
       }
-      // Default date sorting
-      if (filters.sortBy === 'date') {
-        const dateA = new Date(a.createdAt).getTime();
-        const dateB = new Date(b.createdAt).getTime();
-        return filters.sortOrder === 'asc'
-          ? dateA - dateB
-          : dateB - dateA;
-      }
-      return 0;
+      return filters.sortOrder === 'asc'
+        ? new Date(a.createdAt) - new Date(b.createdAt)
+        : new Date(b.createdAt) - new Date(a.createdAt);
     });
-    
-    return sortedPosts;
   }
 );
 
 // Memoized selector for paginated posts
 export const selectPaginatedPosts = createSelector(
-  [selectSortedAndFilteredPosts, selectPostsPagination],
+  [selectSortedAndFilteredPosts, (state) => state.preferences.pagination],
   (posts, pagination) => {
     const { currentPage, itemsPerPage } = pagination;
     const start = (currentPage - 1) * itemsPerPage;
@@ -207,5 +169,4 @@ export const selectPaginatedPosts = createSelector(
   }
 );
 
-export const { setSearchFilter, setSortBy, setCurrentPage } = postsSlice.actions;
 export default postsSlice.reducer;

@@ -1,12 +1,12 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
-  background-color: #f9f9f9;
-  color: #333;
+  background-color: var(--background-primary);
+  color: var(--text-primary);
 }
 
 header {
-  background-color: #6200ea;
+  background-color: var(--primary-color);
   color: white;
   padding: 1rem;
   text-align: center;

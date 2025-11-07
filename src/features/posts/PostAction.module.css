@@ -6,7 +6,7 @@
 }
 
 .button {
-  background-color: #007bff;
+  background-color: var(--button-primary);
   color: white;
   padding: 0.6rem 1rem;
   border: none;
@@ -15,19 +15,27 @@
   cursor: pointer;
 }
 
+.button:hover {
+  background-color: var(--button-hover);
+}
+
 .button:disabled {
-  background-color: #aaa;
+  background-color: var(--text-secondary);
   cursor: not-allowed;
 }
 
 .deleteButton {
-  background-color: #dc3545;
+  background-color: var(--button-danger);
   color: white;
   padding: 0.6rem 1rem;
   border: none;
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
+}
+
+.deleteButton:hover {
+  background-color: var(--button-danger-hover);
 }
 
 /* Mobile CSS */

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectPostsFilters, setSearchFilter, setSortBy, setCurrentPage, selectAllPosts, selectPostsPagination } from './postsSlice';
+import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectAllPosts } from './postsSlice';
+import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, selectTheme } from '../preferences/preferencesSlice';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
@@ -19,8 +20,8 @@ function PostsList() {
   const allPosts = useSelector(selectAllPosts);
   
   const paginatedPosts = useSelector(selectPaginatedPosts);
-  const filters = useSelector(selectPostsFilters);
-  const pagination = useSelector(selectPostsPagination);
+  const filters = useSelector(selectFilters);
+  const pagination = useSelector(selectPagination);
   
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
@@ -51,7 +52,7 @@ function PostsList() {
   };
 
   const handleSort = (key, order) => {
-    dispatch(setSortBy({ key, order }));
+    dispatch(setSortPreference({ key, order }));
   };
 
   const handlePageChange = (page) => {
@@ -96,7 +97,9 @@ function PostsList() {
 
   return (
     <div className={styles.postsList}>
-      <h2>All Posts</h2>
+      <div className={styles.header}>
+        <h2>All Posts</h2>
+      </div>
 
       <div className={styles.actions}>
         <HomeBtn />
@@ -111,37 +114,43 @@ function PostsList() {
       
       <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
 
-      {paginatedPosts.length === 0 && <p>No posts found.</p>}
+      <div className={styles.postsContainer}>
+        <div className={styles.postsGrid}>
+          {paginatedPosts.length === 0 && <p>No posts found.</p>}
 
-      {paginatedPosts.map(post => (
-        <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
-          <input
-            type="checkbox"
-            checked={selectedIds.includes(post.id)}
-            onClick={e => e.stopPropagation()}
-            onChange={() => toggleSelect(post.id)}
-          />
-          <div className={styles.postContent}>
-            <h3>{post.title}</h3>
-            <p className={styles.postMsg}>{post.content}</p>
-            <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
-          </div>
-          <FaTrash
-            className={styles.deleteIcon}
-            onClick={(e) => {
-              e.stopPropagation();
-              dispatch(deletePosts([post.id]));
-            }}
-          />
+          {paginatedPosts.map(post => (
+            <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
+              <input
+                type="checkbox"
+                checked={selectedIds.includes(post.id)}
+                onClick={e => e.stopPropagation()}
+                onChange={() => toggleSelect(post.id)}
+              />
+              <div className={styles.postContent}>
+                <h3>{post.title}</h3>
+                <p className={styles.postMsg}>{post.content}</p>
+                <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
+              </div>
+              <FaTrash
+                className={styles.deleteIcon}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dispatch(deletePosts([post.id]));
+                }}
+              />
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
 
       {paginatedPosts.length > 0 && (
         <PaginationControls 
           currentPage={pageParam} 
           totalPages={Math.ceil(allPosts.length / pagination.itemsPerPage)} 
           onPageChange={handlePageChange}
-          setSearchParams={setSearchParams} 
+          setSearchParams={setSearchParams}
+          itemsPerPage={pagination.itemsPerPage}
+          onItemsPerPageChange={(value) => dispatch(setItemsPerPage(value))}
         />
       )}
     </div>
