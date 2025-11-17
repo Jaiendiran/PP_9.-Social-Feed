@@ -86,7 +86,6 @@ export const { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPa
 export const selectFilters = state => state.preferences.filters;
 export const selectPagination = state => state.preferences.pagination;
 export const selectTheme = state => state.preferences.theme;
-
 // Constants exports for components
 export const preferencesConstants = { VALID_THEMES, MIN_ITEMS_PER_PAGE, MAX_ITEMS_PER_PAGE, VALID_SORT_FIELDS, VALID_SORT_ORDERS };
 

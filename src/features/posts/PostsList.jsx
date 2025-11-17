@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectAllPosts } from './postsSlice';
-import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, selectTheme } from '../preferences/preferencesSlice';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination } from '../preferences/preferencesSlice';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { FormatDate } from '../../utils/formatDate';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import Toast from '../../components/Toast';
 import styles from './PostsList.module.css';
 
 function PostsList() {
@@ -15,16 +17,24 @@ function PostsList() {
   const [selectedIds, setSelectedIds] = useState([]);
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' });
   const pageParam = parseInt(searchParams.get('page')) || 1;
+
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
   const allPosts = useSelector(selectAllPosts);
-  
   const paginatedPosts = useSelector(selectPaginatedPosts);
   const filters = useSelector(selectFilters);
   const pagination = useSelector(selectPagination);
-  
+
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [toDelete, setToDelete] = useState(null);
+  const [isBatchDelete, setIsBatchDelete] = useState(false);
+  const location = useLocation();
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState('info');
 
 
   useEffect(() => {
@@ -43,6 +53,17 @@ function PostsList() {
       dispatch(setCurrentPage(1));
     };
   }, [dispatch]);
+
+  useEffect(() => {
+    const toast = location?.state?.toast;
+    if (toast?.message) {
+      setToastMsg(toast.message);
+      setToastType(toast.type || 'info');
+      setToastOpen(true);
+      
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.pathname]);
 
   // Filter and sort handlers
   const handleSearch = (query) => {
@@ -69,9 +90,11 @@ function PostsList() {
     setSelectedIds([]);
   };
 
-  const deleteSelected = () => {
-    dispatch(deletePosts(selectedIds));
-    setSelectedIds([]);
+  const handleBatchDeleteClick = () => {
+    if (!selectedIds || selectedIds.length === 0) return;
+    setToDelete([...selectedIds]);
+    setIsBatchDelete(true);
+    setConfirmOpen(true);
   };
 
   const toggleSelect = id => {
@@ -95,6 +118,34 @@ function PostsList() {
     );
   }
 
+  const handleConfirmDelete = async () => {
+    try {
+      const ids = Array.isArray(toDelete) ? toDelete : [toDelete];
+      await dispatch(deletePosts(ids)).unwrap();
+      
+      const remainingCount = allPosts.length - ids.length;
+      const itemsPerPage = pagination.itemsPerPage;
+      const maxValidPage = Math.ceil(remainingCount / itemsPerPage);
+      
+      if (pageParam > maxValidPage && maxValidPage > 0) {
+        dispatch(setCurrentPage(maxValidPage));
+        setSearchParams({ page: maxValidPage.toString() });
+      }
+      
+      setToastMsg('Deleted successfully');
+      setToastType('success');
+      if (isBatchDelete) setSelectedIds([]);
+    } catch (err) {
+      setToastMsg(err?.message || 'Delete failed');
+      setToastType('error');
+    } finally {
+      setToastOpen(true);
+      setConfirmOpen(false);
+      setToDelete(null);
+      setIsBatchDelete(false);
+    }
+  };
+
   return (
     <div className={styles.postsList}>
       <div className={styles.header}>
@@ -106,7 +157,7 @@ function PostsList() {
         <NewPostButton />
         <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isEmpty} />
         <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-        {(selectedIds.length > 0 || isEmpty) && ( <DeleteSelectedButton onDelete={deleteSelected} /> )}
+        {(selectedIds.length > 0 || isEmpty) && ( <DeleteSelectedButton onDelete={handleBatchDeleteClick} /> )}
         <div className={styles.searchBarWrapper}>
           <SearchBar onSearch={handleSearch} initialValue={filters.search} />
         </div>
@@ -135,7 +186,9 @@ function PostsList() {
                 className={styles.deleteIcon}
                 onClick={(e) => {
                   e.stopPropagation();
-                  dispatch(deletePosts([post.id]));
+                  setToDelete(post.id);
+                  setIsBatchDelete(false);
+                  setConfirmOpen(true);
                 }}
               />
             </div>
@@ -153,6 +206,16 @@ function PostsList() {
           onItemsPerPageChange={(value) => dispatch(setItemsPerPage(value))}
         />
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Delete post(s)?"
+        message={isBatchDelete ? `Delete ${toDelete.length} selected posts? This cannot be undone.` : `Delete this post? This cannot be undone.`}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
+
+      <Toast open={toastOpen} message={toastMsg} type={toastType} onClose={() => setToastOpen(false)} />
     </div>
   );
 }

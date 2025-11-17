@@ -20,24 +20,3 @@
 .themeToggle:hover {
   transform: scale(1.1);
 }
-
-/* Add these CSS variables to your index.css or App.css */
-[data-theme="light"] {
-  --text-primary: #333;
-  --text-secondary: #666;
-  --background-primary: #fff;
-  --background-secondary: #f5f5f5;
-  --accent-color: #0066cc;
-  --border-color: #ddd;
-  --shadow-color: rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] {
-  --text-primary: #e0e0e0;
-  --text-secondary: #a0a0a0;
-  --background-primary: #1a1a1a;
-  --background-secondary: #2d2d2d;
-  --accent-color: #4d9fff;
-  --border-color: #404040;
-  --shadow-color: rgba(0, 0, 0, 0.3);
-}

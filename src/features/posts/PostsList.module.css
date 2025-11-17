@@ -27,7 +27,7 @@
   display: flex;
   flex-direction: column;
   background-color: var(--background-primary);
-  height: calc(100vh - 50px); /* Adjust for header and controls */
+  height: calc(100vh - 50px);
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -35,7 +35,7 @@
 .postsContainer {
   flex: 1;
   overflow-y: auto;
-  padding-right: 1rem; /* Space for scrollbar */
+  padding-right: 1rem;
   margin: 1rem 0;
   border-radius: 8px;
   background-color: var(--background-secondary);
@@ -103,6 +103,11 @@
 .postContent p.postMsg {
   margin: 0;
   color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .postDate {
   margin: 1.5rem 0 0;
@@ -162,6 +167,7 @@
 .postCard:hover .deleteIcon {
   opacity: 1;
 }
+
 
 /* Mobile CSS */
 @media (max-width: 600px) {

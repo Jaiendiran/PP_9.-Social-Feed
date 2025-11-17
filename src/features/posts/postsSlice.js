@@ -83,7 +83,7 @@ export const deletePosts = createAsyncThunk(
 );
 
 const postsAdapter = createEntityAdapter({
-  sortComparer: (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  sortComparer: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) // Newest first
 });
 
 const initialState = postsAdapter.getInitialState({
