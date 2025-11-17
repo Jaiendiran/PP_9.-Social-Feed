@@ -8,19 +8,21 @@
 .textarea {
   font-size: 1rem;
   padding: 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--input-border);
   border-radius: 4px;
+  background-color: var(--input-background);
+  color: var(--text-primary);
 }
 
 .input:read-only,
 .textarea:read-only {
-  background-color: #eee;
-  color: #555;
+  background-color: var(--background-primary);
+  color: var(--text-secondary);
   cursor: default;
 }
 
 p.error {
-  color: red;
+  color: var(--button-danger);
   font-size: 0.875rem;
   margin: 0 0 1rem;
 }

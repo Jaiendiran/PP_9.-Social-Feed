@@ -62,17 +62,15 @@ export function DeleteSelectedButton({ onDelete }) {
   );
 }
 // Sorting controls
-export function SortControls({ sortBy, setSortBy }) {
+export function SortControls({ sortBy, sortOrder, onSort }) {
   const toggleSort = key => {
-    setSortBy(prev => ({
-      key,
-      order: prev.key === key && prev.order === 'asc' ? 'desc' : 'asc'
-    }));
+    const newOrder = (sortBy === key && sortOrder === 'asc') ? 'desc' : 'asc';
+    onSort(key, newOrder);
   };
 
   const getIcon = key => {
-    if (sortBy.key !== key) return '⬍';
-    return sortBy.order === 'asc' ? '🔼' : '🔽';
+    if (sortBy !== key) return '⬍';
+    return sortOrder === 'asc' ? '🔼' : '🔽';
   };
 
   return (
@@ -95,32 +93,60 @@ export function SortControls({ sortBy, setSortBy }) {
   );
 }
 // Pagination controls
-export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams }) {
+export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange }) {
+  const handleItemsPerPageChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    onItemsPerPageChange(value);
+    // Reset to page 1 when changing items per page
+    onPageChange(1);
+    setSearchParams({ page: '1' });
+  };
+
   return (
     <div className={styles.pagination}>
-      <button
-        className={styles.pageButton}
-        onClick={() => {
-          onPageChange(currentPage - 1);
-          setSearchParams({page: currentPage - 1});
-        }}
-        disabled={currentPage === 1}
-      >
-        Prev
-      </button>
+      <div className={styles.paginationControls}>
+        <button
+          className={styles.pageButton}
+          onClick={() => {
+            onPageChange(currentPage - 1);
+            setSearchParams({page: (currentPage - 1).toString()});
+          }}
+          disabled={currentPage === 1}
+        >
+          Prev
+        </button>
 
-      <span className={styles.pageIndicator}>Page {currentPage} of {totalPages}</span>
+        <span className={styles.pageIndicator}>
+          Page {currentPage} of {totalPages}
+        </span>
 
-      <button
-        className={styles.pageButton}
-        onClick={() => {
-          onPageChange(currentPage + 1); 
-          setSearchParams({page: currentPage + 1});
-        }}
-        disabled={currentPage === totalPages}
-      >
-        Next
-      </button>
+        <button
+          className={styles.pageButton}
+          onClick={() => {
+            onPageChange(currentPage + 1); 
+            setSearchParams({page: (currentPage + 1).toString()});
+          }}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </button>
+      </div>
+
+      <div className={styles.itemsPerPage}>
+        <label htmlFor="itemsPerPage">Items per page:</label>
+        <select
+          id="itemsPerPage"
+          value={itemsPerPage}
+          onChange={handleItemsPerPageChange}
+          className={styles.itemsSelect}
+        >
+          {[5, 10, 25, 50].map(value => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }
@@ -136,11 +162,3 @@ export function SearchBar({ onSearch }) {
     />
   );
 }
-// Date formatting utility
-export const FormatDate = dateStr =>
-  new Date(dateStr).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-

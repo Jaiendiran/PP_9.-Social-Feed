@@ -3,7 +3,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--icon-color);
   cursor: pointer;
   padding: 0.4rem 0.4rem;
   border-radius: 6px;
@@ -11,15 +11,15 @@
 }
 
 .homeIcon:hover {
-  background-color: #f0f0f0;
-  color: #007bff;
+  background-color: var(--background-secondary);
+  color: var(--button-primary);
 }
 
 .backIcon {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #007bff;
+  color: var(--button-primary);
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 1rem;
@@ -27,12 +27,12 @@
 }
 
 .backIcon:hover {
-  color: #0056b3;
+  color: var(--button-hover);
 }
 
 .button {
   padding: 0.6rem 1rem;
-  background-color: #007bff;
+  background-color: var(--button-primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -42,12 +42,12 @@
 }
 
 .button:hover {
-  background-color: #0056b3;
+  background-color: var(--button-hover);
 }
 
 .dangerButton {
   padding: 0.6rem 1rem;
-  background-color: #dc3545;
+  background-color: var(--button-danger);
   color: white;
   border: none;
   border-radius: 6px;
@@ -57,7 +57,7 @@
 }
 
 .dangerButton:hover {
-  background-color: #c82333;
+  background-color: var(--button-danger-hover);
 }
 
 .disabled {
@@ -66,35 +66,57 @@
 
 .pagination {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  font-size: 1rem;
+}
+
+.paginationControls {
+  display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 2rem;
-  font-size: 1rem;
+}
+
+.itemsPerPage {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.itemsSelect {
+  padding: 0.3rem;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  background-color: var(--background-secondary, #f9f9f9);
+  color: var(--text-primary, #333);
 }
 
 .pageButton {
   padding: 0.4rem 0.8rem;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-secondary);
+  color: var(--text-primary);
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .pageButton:hover {
-  background-color: #eaeaea;
+  background-color: var(--background-primary);
 }
 
 .pageButton:disabled {
-  background-color: #ddd;
+  background-color: var(--background-secondary);
   cursor: not-allowed;
   opacity: 0.6;
 }
 
 .pageIndicator {
   font-weight: 500;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .searchBarWrapper {
@@ -107,17 +129,19 @@
 
 .searchInput {
   padding: 0.5rem 0.75rem;
-  border: 1px solid #ccc;
+  border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 1rem;
   width: 250px;
   max-width: 100%;
+  background-color: var(--input-background);
+  color: var(--text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .searchInput:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  border-color: var(--button-primary);
+  box-shadow: 0 0 0 2px var(--shadow-color);
   outline: none;
 }
 
@@ -127,7 +151,7 @@
   margin-top: 1rem;
   font-weight: 500;
   font-size: 1rem;
-  color: #333;
+  color: var(--text-primary);
   padding-left: 0.5rem;
 }
 
@@ -140,12 +164,12 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  color: #333;
+  color: var(--text-primary);
   transition: color 0.2s ease;
 }
 
 .sortOption:hover {
-  color: #007bff;
+  color: var(--button-primary);
 }
 
 .sortIcon {

@@ -1,6 +1,6 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk, createEntityAdapter, createSelector } from '@reduxjs/toolkit';
 import { openDB } from 'idb';
-
+import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 
 // IndexedDB configuration
 const DB_NAME = 'PostDB';
@@ -13,47 +13,160 @@ const getDB = async () => {
     }
   });
 };
-// Async thunk to load posts from IndexedDB
-export const fetchPosts = createAsyncThunk('posts/fetchPosts', async (_, { dispatch }) => {
- try {
-    const db = await getDB();
-    return await db.getAll(STORE_NAME);
-  } catch (err) {
-    dispatch(setError('Failed to load posts.'));
-    throw err;
+// Async thunk to fetch posts from IndexedDB
+export const fetchPosts = createAsyncThunk(
+  'posts/fetchPosts',
+  async (_, { rejectWithValue }) => {
+    try {
+      // Check cache first
+      try {
+        const cachedPosts = cacheUtils.get(cacheKeys.POSTS);
+        if (cachedPosts) {
+          return cachedPosts;
+        }
+      } catch (cacheError) {
+        console.warn('Cache read failed, falling back to DB:', cacheError);
+      }
+      // If no cache or cache error, fetch from IndexedDB
+      const db = await getDB();
+      const posts = await db.getAll(STORE_NAME);
+      // Update cache
+      try {
+        cacheUtils.set(cacheKeys.POSTS, posts);
+      } catch (cacheError) {
+        console.warn('Cache write failed:', cacheError);
+      }
+
+      return posts;
+    } catch (err) {
+      return rejectWithValue('Failed to fetch posts: ' + err.message);
+    }
   }
-});
+);
 // Async thunk to save a post to IndexedDB
-export const savePost = createAsyncThunk('posts/savePost', async (post) => {
-  const db = await getDB();
-  await db.put(STORE_NAME, post);
-  return post;
-});
+export const savePost = createAsyncThunk(
+  'posts/savePost',
+  async (post, { rejectWithValue }) => {
+    try {
+      const db = await getDB();
+      await db.put(STORE_NAME, post);
+      // Clear cache
+      try {
+        cacheUtils.clear(cacheKeys.POSTS);
+      } catch (cacheError) {
+        console.warn('Cache clear failed:', cacheError);
+      }
+      
+      return post;
+    } catch (err) {
+      return rejectWithValue('Failed to save post: ' + err.message);
+    }
+  }
+);
 // Async thunk to delete a post to IndexedDB
-export const deletePosts = createAsyncThunk('posts/deletePosts', async (ids) => {
-  const db = await getDB();
-  const tx = db.transaction(STORE_NAME, 'readwrite');
-  ids.forEach(id => tx.store.delete(id));
-  await tx.done;
-  return ids;
+export const deletePosts = createAsyncThunk(
+  'posts/deletePosts',
+  async (ids, { rejectWithValue }) => {
+    try {
+      const db = await getDB();
+      const tx = db.transaction(STORE_NAME, 'readwrite');
+      await Promise.all(ids.map(id => tx.store.delete(id)));
+      await tx.done;
+      // Clear posts cache when we update data
+      cacheUtils.clear(cacheKeys.POSTS);
+      
+      return ids;
+    } catch (err) {
+      return rejectWithValue('Failed to delete posts: ' + err.message);
+    }
+  }
+);
+
+const postsAdapter = createEntityAdapter({
+  sortComparer: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) // Newest first
+});
+
+const initialState = postsAdapter.getInitialState({
+  status: 'idle',
+  error: null
 });
 // Post slice
 const postsSlice = createSlice({
   name: 'posts',
-  initialState: [],
-  reducers: {},
+  initialState,
+  reducers:{},
   extraReducers: builder => {
     builder
-      .addCase(fetchPosts.fulfilled, (_, action) => action.payload)
-      .addCase(savePost.fulfilled, (state, action) => {
-        const index = state.findIndex(p => p.id === action.payload.id);
-        if (index >= 0) state[index] = action.payload;
-        else state.push(action.payload);
+      // Fetch posts cases
+      .addCase(fetchPosts.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
       })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        postsAdapter.setAll(state, action.payload);
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+      })
+      // Save post cases
+      .addCase(savePost.fulfilled, (state, action) => {
+        postsAdapter.upsertOne(state, action.payload);
+      })
+      // Delete posts cases
       .addCase(deletePosts.fulfilled, (state, action) => {
-        return state.filter(post => !action.payload.includes(post.id));
+        postsAdapter.removeMany(state, action.payload);
       });
-  }
+    }
 });
+
+// Get the pre-built selectors
+export const {
+  selectAll: selectAllPosts,
+  selectById: selectPostById,
+  selectIds: selectPostIds
+} = postsAdapter.getSelectors(state => state.posts);
+
+// Additional selectors for status, error, filters, and pagination
+export const selectPostsStatus = state => state.posts.status;
+export const selectPostsError = state => state.posts.error;
+
+// Memoized selector for sorted and filtered posts
+export const selectSortedAndFilteredPosts = createSelector(
+  [selectAllPosts, (state) => state.preferences.filters],
+  (posts, filters) => {
+    let filteredPosts = posts;
+    
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredPosts = posts.filter(post => 
+        post.title.toLowerCase().includes(searchLower) ||
+        post.content.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return [...filteredPosts].sort((a, b) => {
+      if (filters.sortBy === 'title') {
+        return filters.sortOrder === 'asc'
+          ? a.title.localeCompare(b.title)
+          : b.title.localeCompare(a.title);
+      }
+      return filters.sortOrder === 'asc'
+        ? new Date(a.createdAt) - new Date(b.createdAt)
+        : new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }
+);
+
+// Memoized selector for paginated posts
+export const selectPaginatedPosts = createSelector(
+  [selectSortedAndFilteredPosts, (state) => state.preferences.pagination],
+  (posts, pagination) => {
+    const { currentPage, itemsPerPage } = pagination;
+    const start = (currentPage - 1) * itemsPerPage;
+    return posts.slice(start, start + itemsPerPage);
+  }
+);
 
 export default postsSlice.reducer;

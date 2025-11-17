@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import PostsList from '../features/posts/PostsList';
-import styles from './Home.module.css';
 import { useDispatch } from 'react-redux';
 import { fetchPosts } from '../features/posts/postsSlice';
+import styles from './Home.module.css';
 
 function Home() {
   const dispatch = useDispatch();
