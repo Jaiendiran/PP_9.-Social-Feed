@@ -3,8 +3,8 @@
 }
 
 .themeToggle {
-  position: fixed;
-  top: 1rem;
+  position: absolute;
+  top: 0.65rem;
   right: 1rem;
   padding: 0.5rem;
   border-radius: 50%;
