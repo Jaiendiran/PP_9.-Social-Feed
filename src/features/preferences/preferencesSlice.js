@@ -7,12 +7,14 @@ const MIN_ITEMS_PER_PAGE = 5;
 const MAX_ITEMS_PER_PAGE = 50;
 const VALID_SORT_FIELDS = ['date', 'title'];
 const VALID_SORT_ORDERS = ['asc', 'desc'];
+const VALID_POST_OPTIONS = ['all', 'created', 'external'];
 
 const initialState = {
   filters: {
     search: '',
     sortBy: 'date',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
+    option: 'all'
   },
   pagination: {
     currentPage: 1,
@@ -43,6 +45,11 @@ const preferencesSlice = createSlice({
       }
       state.filters.sortBy = key;
       state.filters.sortOrder = order;
+      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+    },
+    setPostSelection: (state, action) => {
+      const option = action.payload;
+      state.filters.option = option;
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },
     setCurrentPage: (state, action) => {
@@ -81,7 +88,7 @@ const preferencesSlice = createSlice({
   }
 });
 
-export const { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, setTheme, resetPreferences } = preferencesSlice.actions;
+export const { setSearchFilter, setSortPreference, setPostSelection, setCurrentPage, setItemsPerPage, setTheme, resetPreferences } = preferencesSlice.actions;
 // Selectors
 export const selectFilters = state => state.preferences.filters;
 export const selectPagination = state => state.preferences.pagination;

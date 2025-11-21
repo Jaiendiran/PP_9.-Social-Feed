@@ -92,6 +92,20 @@ export function SortControls({ sortBy, sortOrder, onSort }) {
     </div>
   );
 }
+// Dropdown
+export function Dropdown({ selectedOption, onChange }) {
+  return (
+    <select
+      className={styles.dropdown}
+      value={selectedOption}
+      onChange={(e) => onChange(e.target.value)}
+    >
+      <option value="all">All</option>
+      <option value="created">Created</option>
+      <option value="external">External</option>
+    </select>
+  );
+}
 // Pagination controls
 export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange }) {
   const handleItemsPerPageChange = (e) => {
@@ -109,7 +123,7 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
           className={styles.pageButton}
           onClick={() => {
             onPageChange(currentPage - 1);
-            setSearchParams({page: (currentPage - 1).toString()});
+            setSearchParams({ page: (currentPage - 1).toString() });
           }}
           disabled={currentPage === 1}
         >
@@ -123,8 +137,8 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
         <button
           className={styles.pageButton}
           onClick={() => {
-            onPageChange(currentPage + 1); 
-            setSearchParams({page: (currentPage + 1).toString()});
+            onPageChange(currentPage + 1);
+            setSearchParams({ page: (currentPage + 1).toString() });
           }}
           disabled={currentPage === totalPages}
         >

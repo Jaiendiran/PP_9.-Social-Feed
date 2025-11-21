@@ -56,7 +56,7 @@ export const savePost = createAsyncThunk(
       } catch (cacheError) {
         console.warn('Cache clear failed:', cacheError);
       }
-      
+
       return post;
     } catch (err) {
       return rejectWithValue('Failed to save post: ' + err.message);
@@ -74,7 +74,7 @@ export const deletePosts = createAsyncThunk(
       await tx.done;
       // Clear posts cache when we update data
       cacheUtils.clear(cacheKeys.POSTS);
-      
+
       return ids;
     } catch (err) {
       return rejectWithValue('Failed to delete posts: ' + err.message);
@@ -94,7 +94,7 @@ const initialState = postsAdapter.getInitialState({
 const postsSlice = createSlice({
   name: 'posts',
   initialState,
-  reducers:{},
+  reducers: {},
   extraReducers: builder => {
     builder
       // Fetch posts cases
@@ -118,7 +118,7 @@ const postsSlice = createSlice({
       .addCase(deletePosts.fulfilled, (state, action) => {
         postsAdapter.removeMany(state, action.payload);
       });
-    }
+  }
 });
 
 // Get the pre-built selectors
@@ -137,10 +137,16 @@ export const selectSortedAndFilteredPosts = createSelector(
   [selectAllPosts, (state) => state.preferences.filters],
   (posts, filters) => {
     let filteredPosts = posts;
-    
+
+    if (filters.option === 'created') {
+      filteredPosts = filteredPosts.filter(post => !post.isExternal);
+    } else if (filters.option === 'external') {
+      filteredPosts = filteredPosts.filter(post => post.isExternal);
+    }
+
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filteredPosts = posts.filter(post => 
+      filteredPosts = filteredPosts.filter(post =>
         post.title.toLowerCase().includes(searchLower) ||
         post.content.toLowerCase().includes(searchLower)
       );

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectAllPosts } from './postsSlice';
-import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination } from '../preferences/preferencesSlice';
+import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn } from './PostsControls';
+import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { FormatDate } from '../../utils/formatDate';
@@ -46,7 +46,7 @@ function PostsList() {
       dispatch(fetchPosts());
     };
     loadPosts();
-    
+
     // Cleanup function
     return () => {
       dispatch(setSearchFilter(''));
@@ -60,7 +60,7 @@ function PostsList() {
       setToastMsg(toast.message);
       setToastType(toast.type || 'info');
       setToastOpen(true);
-      
+
       window.history.replaceState({}, document.title);
     }
   }, [location.pathname]);
@@ -74,6 +74,10 @@ function PostsList() {
 
   const handleSort = (key, order) => {
     dispatch(setSortPreference({ key, order }));
+  };
+
+  const handlePostSelection = (option) => {
+    dispatch(setPostSelection(option));
   };
 
   const handlePageChange = (page) => {
@@ -98,7 +102,7 @@ function PostsList() {
   };
 
   const toggleSelect = id => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id] );
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
   if (status === 'loading') {
@@ -122,16 +126,16 @@ function PostsList() {
     try {
       const ids = Array.isArray(toDelete) ? toDelete : [toDelete];
       await dispatch(deletePosts(ids)).unwrap();
-      
+
       const remainingCount = allPosts.length - ids.length;
       const itemsPerPage = pagination.itemsPerPage;
       const maxValidPage = Math.ceil(remainingCount / itemsPerPage);
-      
+
       if (pageParam > maxValidPage && maxValidPage > 0) {
         dispatch(setCurrentPage(maxValidPage));
         setSearchParams({ page: maxValidPage.toString() });
       }
-      
+
       setToastMsg('Deleted successfully');
       setToastType('success');
       if (isBatchDelete) setSelectedIds([]);
@@ -153,17 +157,23 @@ function PostsList() {
       </div>
 
       <div className={styles.actions}>
-        <HomeBtn />
-        <NewPostButton />
-        <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isEmpty} />
-        <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-        {(selectedIds.length > 0 || isEmpty) && ( <DeleteSelectedButton onDelete={handleBatchDeleteClick} /> )}
-        <div className={styles.searchBarWrapper}>
-          <SearchBar onSearch={handleSearch} initialValue={filters.search} />
+        <div className={styles.rowOneWrapper}>
+          <div className={styles.rowOneLeft}>
+            <HomeBtn />
+            <NewPostButton />
+            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isEmpty} />
+            <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
+            {(selectedIds.length > 0 || isEmpty) && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+          </div>
+          <div className={styles.searchBarWrapper}>
+            <SearchBar onSearch={handleSearch} initialValue={filters.search} />
+          </div>
+        </div>
+        <div className={styles.rowTwoWrapper}>
+          <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
+          <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
         </div>
       </div>
-      
-      <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
 
       <div className={styles.postsContainer}>
         <div className={styles.postsGrid}>
@@ -197,9 +207,9 @@ function PostsList() {
       </div>
 
       {paginatedPosts.length > 0 && (
-        <PaginationControls 
-          currentPage={pageParam} 
-          totalPages={Math.ceil(allPosts.length / pagination.itemsPerPage)} 
+        <PaginationControls
+          currentPage={pageParam}
+          totalPages={Math.ceil(allPosts.length / pagination.itemsPerPage)}
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams}
           itemsPerPage={pagination.itemsPerPage}

@@ -15,7 +15,7 @@ function PostManager() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { postId } = useParams();
-  
+
   const post = useSelector(state => selectPostById(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
@@ -75,11 +75,12 @@ function PostManager() {
     }
 
     const id = postId || Date.now().toString();
-    const newPost = { 
-      id, 
-      title, 
-      content, 
-      createdAt: post ? post.createdAt : new Date().toISOString()
+    const newPost = {
+      id,
+      title,
+      content,
+      createdAt: post ? post.createdAt : new Date().toISOString(),
+      isExternal: false
     };
 
     try {

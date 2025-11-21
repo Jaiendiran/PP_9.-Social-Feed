@@ -177,6 +177,16 @@
   font-size: 0.9rem;
 }
 
+/* Dropdown CSS */
+.dropdown {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  min-width: 100px;
+  padding: 0.4rem 0;
+}
+
 /* Mobile CSS */
 @media (max-width: 480px) {
   .pagination {

@@ -96,10 +96,12 @@
   flex-grow: 1;
   margin-left: 1rem;
 }
+
 .postContent h3 {
   margin: 0 0 0.5rem;
   color: var(--text-primary);
 }
+
 .postContent p.postMsg {
   margin: 0;
   color: var(--text-primary);
@@ -109,6 +111,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .postDate {
   margin: 1.5rem 0 0;
   font-size: 0.85rem;
@@ -118,11 +121,26 @@
 
 .actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+}
+
+.rowOneWrapper {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.2rem;
   margin-bottom: 1rem;
+}
+
+.rowOneLeft {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.rowTwoWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .searchBarWrapper {
@@ -153,15 +171,16 @@
 }
 
 .deleteIcon {
-   position: absolute;
-    right: 1rem;
-    color: var(--button-danger);
-    cursor: pointer;
-    opacity: 0;
-    transition: opacity 0.2s ease;
+  position: absolute;
+  right: 1rem;
+  color: var(--button-danger);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
+
 .deleteIcon:hover {
-    color: var(--button-danger-hover);
+  color: var(--button-danger-hover);
 }
 
 .postCard:hover .deleteIcon {
