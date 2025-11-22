@@ -1,6 +1,6 @@
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHome } from 'react-icons/fa';
+import { FaArrowLeft, FaHome, FaTimes } from 'react-icons/fa';
 
 
 // Home button component
@@ -165,14 +165,26 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
   );
 }
 // Search bar component
-export function SearchBar({ onSearch }) {
+export function SearchBar({ onSearch, initialValue }) {
   return (
-    <input
-      name='post search'
-      type="text"
-      placeholder="Search posts..."
-      onChange={e => onSearch(e.target.value)}
-      className={styles.searchInput}
-    />
+    <div className={styles.searchWrapper}>
+      <input
+        name='post search'
+        type="text"
+        placeholder="Search posts..."
+        value={initialValue}
+        onChange={e => onSearch(e.target.value)}
+        className={styles.searchInput}
+      />
+      {initialValue && (
+        <button
+          className={styles.clearButton}
+          onClick={() => onSearch('')}
+          aria-label="Clear search"
+        >
+          <FaTimes />
+        </button>
+      )}
+    </div>
   );
 }

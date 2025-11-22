@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { savePost, deletePosts, selectPostById, selectPostsStatus, selectPostsError } from './postsSlice';
+import { savePost, deletePosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -16,7 +16,7 @@ function PostManager() {
   const navigate = useNavigate();
   const { postId } = useParams();
 
-  const post = useSelector(state => selectPostById(state, postId));
+  const post = useSelector(state => selectPostByIdCombined(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
 
@@ -80,7 +80,7 @@ function PostManager() {
       title,
       content,
       createdAt: post ? post.createdAt : new Date().toISOString(),
-      isExternal: false
+      isExternal: post?.isExternal ?? false
     };
 
     try {

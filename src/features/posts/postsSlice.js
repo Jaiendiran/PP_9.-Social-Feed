@@ -82,13 +82,44 @@ export const deletePosts = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch external posts
+export const fetchExternalPosts = createAsyncThunk(
+  'posts/fetchExternalPosts',
+  async ({ start, limit }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`https://jsonplaceholder.typicode.com/posts?_start=${start}&_limit=${limit}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch external posts');
+      }
+      const data = await response.json();
+      return {
+        posts: data.map(post => ({
+          ...post,
+          content: post.body, // Map body to content
+          isExternal: true,
+          // Deterministic date based on ID to ensure consistent sorting
+          // Base date: 2023-01-01. Subtract time so lower IDs (fetched first) are newer.
+          createdAt: new Date(1672531200000 - post.id * 3600000).toISOString(),
+        })),
+        start
+      };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
 const postsAdapter = createEntityAdapter({
   sortComparer: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) // Newest first
 });
 
 const initialState = postsAdapter.getInitialState({
   status: 'idle',
-  error: null
+  error: null,
+  externalPosts: [],
+  externalStatus: 'idle',
+  externalError: null,
+  isExternalCached: false
 });
 // Post slice
 const postsSlice = createSlice({
@@ -117,6 +148,28 @@ const postsSlice = createSlice({
       // Delete posts cases
       .addCase(deletePosts.fulfilled, (state, action) => {
         postsAdapter.removeMany(state, action.payload);
+      })
+      // Fetch external posts cases
+      .addCase(fetchExternalPosts.pending, (state) => {
+        state.externalStatus = 'loading';
+        state.externalError = null;
+      })
+      .addCase(fetchExternalPosts.fulfilled, (state, action) => {
+        state.externalStatus = 'succeeded';
+        const { posts, start } = action.payload;
+        // Ensure array is large enough (jsonplaceholder has 100 posts)
+        if (state.externalPosts.length < 100) {
+          // Initialize with empty slots if needed, or just assign to index
+          // Array assignment at index > length automatically fills with empty/undefined
+        }
+        posts.forEach((post, index) => {
+          state.externalPosts[start + index] = post;
+        });
+        // We don't set isExternalCached globally true anymore, as it depends on the range
+      })
+      .addCase(fetchExternalPosts.rejected, (state, action) => {
+        state.externalStatus = 'failed';
+        state.externalError = action.payload;
       });
   }
 });
@@ -131,17 +184,39 @@ export const {
 // Additional selectors for status, error, filters, and pagination
 export const selectPostsStatus = state => state.posts.status;
 export const selectPostsError = state => state.posts.error;
+export const selectExternalPostsStatus = state => state.posts.externalStatus;
+export const selectExternalPostsError = state => state.posts.externalError;
+export const selectIsExternalCached = state => state.posts.isExternalCached;
 
 // Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(
-  [selectAllPosts, (state) => state.preferences.filters],
-  (posts, filters) => {
+  [selectAllPosts, (state) => state.preferences.filters, (state) => state.posts.externalPosts],
+  (posts, filters, externalPosts) => {
     let filteredPosts = posts;
 
     if (filters.option === 'created') {
+      // Only show posts that are explicitly NOT external
       filteredPosts = filteredPosts.filter(post => !post.isExternal);
     } else if (filters.option === 'external') {
-      filteredPosts = filteredPosts.filter(post => post.isExternal);
+      // Show external posts, but prefer local version if edited
+      filteredPosts = externalPosts
+        .filter(p => p) // Filter out empty slots
+        .map(extPost => {
+          const localVersion = posts.find(p => p.id == extPost.id);
+          return localVersion || extPost;
+        });
+    } else if (filters.option === 'all') {
+      // Combine local and external
+      // 1. Get all local posts
+      const localPosts = posts;
+
+      // 2. Get external posts that are NOT in local posts (to avoid duplicates)
+      const uniqueExternalPosts = externalPosts
+        .filter(p => p) // Filter out empty slots
+        .filter(extPost => !localPosts.some(local => local.id == extPost.id));
+
+      // 3. Combine
+      filteredPosts = [...localPosts, ...uniqueExternalPosts];
     }
 
     if (filters.search) {
@@ -174,5 +249,19 @@ export const selectPaginatedPosts = createSelector(
     return posts.slice(start, start + itemsPerPage);
   }
 );
+
+// Selector to find a post by ID from either local or external source
+export const selectPostByIdCombined = (state, postId) => {
+  // Check local first
+  let post = selectPostById(state, postId);
+  if (post) return post;
+
+  // Check external
+  const externalPosts = state.posts.externalPosts;
+  // Since externalPosts is sparse and we might not have the index map easily without ID,
+  // we just search the array. Sparse slots are undefined.
+  post = externalPosts.find(p => p && p.id == postId); // Loose equality for ID if string/number mismatch
+  return post;
+};
 
 export default postsSlice.reducer;

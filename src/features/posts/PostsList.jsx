@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectAllPosts } from './postsSlice';
+import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectIsExternalCached, selectAllPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
@@ -20,13 +20,24 @@ function PostsList() {
 
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
-  const allPosts = useSelector(selectAllPosts);
-  const paginatedPosts = useSelector(selectPaginatedPosts);
+  const externalStatus = useSelector(selectExternalPostsStatus);
+  const externalError = useSelector(selectExternalPostsError);
+
   const filters = useSelector(selectFilters);
   const pagination = useSelector(selectPagination);
 
+  const currentStatus = filters.option === 'external' ? externalStatus : status;
+  const currentError = filters.option === 'external' ? externalError : error;
+
+  const allPosts = useSelector(selectAllPosts);
+  const externalPosts = useSelector(state => state.posts.externalPosts);
+  const paginatedPosts = useSelector(selectPaginatedPosts);
+
   const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
   const isEmpty = allPosts.length === 0;
+
+  // Calculate counts for pagination
+  const createdPostsCount = allPosts.filter(p => !p.isExternal).length;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
@@ -43,16 +54,33 @@ function PostsList() {
 
   useEffect(() => {
     const loadPosts = async () => {
-      dispatch(fetchPosts());
+      // Fetch local posts if option is 'all' or 'created' (default)
+      if (filters.option !== 'external') {
+        dispatch(fetchPosts());
+      }
+
+      // Fetch external posts if option is 'all' or 'external'
+      if (filters.option === 'external' || filters.option === 'all') {
+        const { currentPage, itemsPerPage } = pagination;
+        const start = (currentPage - 1) * itemsPerPage;
+        const limit = itemsPerPage;
+
+        // Check if we have data for this range
+        const hasData = externalPosts.slice(start, start + limit).filter(p => p).length === limit;
+
+        if (!hasData && externalStatus !== 'loading') {
+          dispatch(fetchExternalPosts({ start, limit }));
+        }
+      }
     };
     loadPosts();
 
     // Cleanup function
     return () => {
-      dispatch(setSearchFilter(''));
-      dispatch(setCurrentPage(1));
+      // We might want to reset search/page on unmount, but maybe not for tab switching
+      // Keeping existing behavior for now
     };
-  }, [dispatch]);
+  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage, externalPosts, externalStatus]);
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -78,6 +106,7 @@ function PostsList() {
 
   const handlePostSelection = (option) => {
     dispatch(setPostSelection(option));
+    setSearchParams({ page: '1' });
   };
 
   const handlePageChange = (page) => {
@@ -105,12 +134,12 @@ function PostsList() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  if (status === 'loading') {
+  if (currentStatus === 'loading') {
     return <LoadingSpinner />;
   }
 
-  if (status === 'failed') {
-    return <div className={styles.error}>Error: {error}</div>;
+  if (currentStatus === 'failed') {
+    return <div className={styles.error}>Error: {currentError}</div>;
   }
 
   if (isEmpty) {
@@ -209,7 +238,13 @@ function PostsList() {
       {paginatedPosts.length > 0 && (
         <PaginationControls
           currentPage={pageParam}
-          totalPages={Math.ceil(allPosts.length / pagination.itemsPerPage)}
+          totalPages={
+            filters.option === 'external'
+              ? Math.ceil(100 / pagination.itemsPerPage)
+              : filters.option === 'all'
+                ? Math.ceil((createdPostsCount + 100) / pagination.itemsPerPage)
+                : Math.ceil(createdPostsCount / pagination.itemsPerPage)
+          }
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams}
           itemsPerPage={pagination.itemsPerPage}

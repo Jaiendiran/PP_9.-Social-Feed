@@ -14,7 +14,7 @@ const initialState = {
     search: '',
     sortBy: 'date',
     sortOrder: 'desc',
-    option: 'all'
+    option: 'created'
   },
   pagination: {
     currentPage: 1,
@@ -50,6 +50,8 @@ const preferencesSlice = createSlice({
     setPostSelection: (state, action) => {
       const option = action.payload;
       state.filters.option = option;
+      // Reset to first page when changing filter
+      state.pagination.currentPage = 1;
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },
     setCurrentPage: (state, action) => {

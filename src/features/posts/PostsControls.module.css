@@ -128,8 +128,14 @@
   flex-grow: 1;
 }
 
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .searchInput {
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 1rem;
@@ -144,6 +150,26 @@
   border-color: var(--button-primary);
   box-shadow: 0 0 0 2px var(--shadow-color);
   outline: none;
+}
+
+.clearButton {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.clearButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
 }
 
 .sortRow {
