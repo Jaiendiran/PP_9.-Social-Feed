@@ -1,15 +1,11 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import styles from './PostForm.module.css';
+import useAutosizeTextarea from '../../hooks/useAutoSizeTextArea';
 
 function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
     const textareaRef = useRef(null);
 
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = 'auto';
-            textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-        }
-    }, [content]);
+    useAutosizeTextarea(textareaRef, content);
 
     return (
         <form className={styles.form}>
@@ -20,7 +16,7 @@ function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
                 placeholder="Title"
                 readOnly={!isEditing}
             />
-            {errors.title && <p className={styles.error}>{errors.title}</p>}
+            {errors?.title && <p className={styles.error}>{errors.title}</p>}
             <textarea
                 ref={textareaRef}
                 className={styles.textarea}
@@ -29,7 +25,7 @@ function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
                 placeholder="Content"
                 readOnly={!isEditing}
             />
-            {errors.content && <p className={styles.error}>{errors.content}</p>}
+            {errors?.content && <p className={styles.error}>{errors.content}</p>}
         </form>
     );
 }

@@ -81,7 +81,6 @@ export const deletePosts = createAsyncThunk(
     }
   }
 );
-
 // Async thunk to fetch external posts
 export const fetchExternalPosts = createAsyncThunk(
   'posts/fetchExternalPosts',
@@ -95,10 +94,8 @@ export const fetchExternalPosts = createAsyncThunk(
       return {
         posts: data.map(post => ({
           ...post,
-          content: post.body, // Map body to content
+          content: post.body,
           isExternal: true,
-          // Deterministic date based on ID to ensure consistent sorting
-          // Base date: 2023-01-01. Subtract time so lower IDs (fetched first) are newer.
           createdAt: new Date(1672531200000 - post.id * 3600000).toISOString(),
         })),
         start
@@ -157,7 +154,6 @@ const postsSlice = createSlice({
       .addCase(fetchExternalPosts.fulfilled, (state, action) => {
         state.externalStatus = 'succeeded';
         const { posts, start } = action.payload;
-        // Ensure array is large enough (jsonplaceholder has 100 posts)
         if (state.externalPosts.length < 100) {
           // Initialize with empty slots if needed, or just assign to index
           // Array assignment at index > length automatically fills with empty/undefined
@@ -209,12 +205,10 @@ export const selectSortedAndFilteredPosts = createSelector(
       // Combine local and external
       // 1. Get all local posts
       const localPosts = posts;
-
       // 2. Get external posts that are NOT in local posts (to avoid duplicates)
       const uniqueExternalPosts = externalPosts
         .filter(p => p) // Filter out empty slots
         .filter(extPost => !localPosts.some(local => local.id == extPost.id));
-
       // 3. Combine
       filteredPosts = [...localPosts, ...uniqueExternalPosts];
     }
@@ -255,7 +249,6 @@ export const selectPostByIdCombined = (state, postId) => {
   // Check local first
   let post = selectPostById(state, postId);
   if (post) return post;
-
   // Check external
   const externalPosts = state.posts.externalPosts;
   // Since externalPosts is sparse and we might not have the index map easily without ID,

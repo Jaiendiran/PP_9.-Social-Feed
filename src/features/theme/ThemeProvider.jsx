@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectTheme, setTheme, preferencesConstants } from '../preferences/preferencesSlice';
+import { selectTheme, setTheme } from '../preferences/preferencesSlice';
 import styles from './ThemeProvider.module.css';
 
 export function ThemeProvider({ children }) {
@@ -18,7 +18,7 @@ export function ThemeProvider({ children }) {
 
   return (
     <div className={styles.themeWrapper}>
-      <button 
+      <button
         className={styles.themeToggle}
         onClick={toggleTheme}
         title={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} theme`}

@@ -7,7 +7,6 @@ const MIN_ITEMS_PER_PAGE = 5;
 const MAX_ITEMS_PER_PAGE = 50;
 const VALID_SORT_FIELDS = ['date', 'title'];
 const VALID_SORT_ORDERS = ['asc', 'desc'];
-const VALID_POST_OPTIONS = ['all', 'created', 'external'];
 
 const initialState = {
   filters: {

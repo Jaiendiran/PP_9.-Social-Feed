@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectIsExternalCached, selectAllPosts } from './postsSlice';
+import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
@@ -22,7 +22,6 @@ function PostsList() {
   const error = useSelector(selectPostsError);
   const externalStatus = useSelector(selectExternalPostsStatus);
   const externalError = useSelector(selectExternalPostsError);
-
   const filters = useSelector(selectFilters);
   const pagination = useSelector(selectPagination);
 
