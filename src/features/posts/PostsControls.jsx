@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHome, FaTimes } from 'react-icons/fa';
@@ -166,20 +167,42 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
 }
 // Search bar component
 export function SearchBar({ onSearch, initialValue }) {
+  const [localValue, setLocalValue] = useState(initialValue || '');
+
+  useEffect(() => {
+    setLocalValue(initialValue || '');
+  }, [initialValue]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearch(localValue);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [localValue, onSearch]);
+
+  const handleChange = (e) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleClear = () => {
+    setLocalValue('');
+  };
+
   return (
     <div className={styles.searchWrapper}>
       <input
         name='post search'
         type="text"
         placeholder="Search posts..."
-        value={initialValue}
-        onChange={e => onSearch(e.target.value)}
+        value={localValue}
+        onChange={handleChange}
         className={styles.searchInput}
       />
-      {initialValue && (
+      {localValue && (
         <button
           className={styles.clearButton}
-          onClick={() => onSearch('')}
+          onClick={handleClear}
           aria-label="Clear search"
         >
           <FaTimes />

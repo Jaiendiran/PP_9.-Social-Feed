@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
@@ -52,33 +52,26 @@ function PostsList() {
   }, [pageParam, dispatch]);
 
   useEffect(() => {
-    const loadPosts = async () => {
-      // Fetch local posts if option is 'all' or 'created' (default)
-      if (filters.option !== 'external') {
-        dispatch(fetchPosts());
+    // Fetch local posts if option is 'all' or 'created' (default)
+    if (filters.option !== 'external') {
+      dispatch(fetchPosts());
+    }
+  }, [dispatch, filters.option]);
+
+  useEffect(() => {
+    // Fetch external posts if option is 'all' or 'external'
+    if (filters.option === 'external' || filters.option === 'all') {
+      const { currentPage, itemsPerPage } = pagination;
+      const start = (currentPage - 1) * itemsPerPage;
+      const limit = itemsPerPage;
+
+      // Check if we have data for this range
+      const hasData = externalPosts.slice(start, start + limit).filter(p => p).length === limit;
+
+      if (!hasData && externalStatus !== 'loading') {
+        dispatch(fetchExternalPosts({ start, limit }));
       }
-
-      // Fetch external posts if option is 'all' or 'external'
-      if (filters.option === 'external' || filters.option === 'all') {
-        const { currentPage, itemsPerPage } = pagination;
-        const start = (currentPage - 1) * itemsPerPage;
-        const limit = itemsPerPage;
-
-        // Check if we have data for this range
-        const hasData = externalPosts.slice(start, start + limit).filter(p => p).length === limit;
-
-        if (!hasData && externalStatus !== 'loading') {
-          dispatch(fetchExternalPosts({ start, limit }));
-        }
-      }
-    };
-    loadPosts();
-
-    // Cleanup function
-    return () => {
-      // We might want to reset search/page on unmount, but maybe not for tab switching
-      // Keeping existing behavior for now
-    };
+    }
   }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage, externalPosts, externalStatus]);
 
   useEffect(() => {
@@ -93,11 +86,13 @@ function PostsList() {
   }, [location.pathname]);
 
   // Filter and sort handlers
-  const handleSearch = (query) => {
-    dispatch(setSearchFilter(query));
-    dispatch(setCurrentPage(1));
-    setSearchParams({ page: '1' });
-  };
+  const handleSearch = useCallback((query) => {
+    if (query !== filters.search) {
+      dispatch(setSearchFilter(query));
+      dispatch(setCurrentPage(1));
+      setSearchParams({ page: '1' });
+    }
+  }, [dispatch, setSearchParams, filters.search]);
 
   const handleSort = (key, order) => {
     dispatch(setSortPreference({ key, order }));
