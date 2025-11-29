@@ -88,7 +88,7 @@ function PostManager() {
       setIsEditing(false);
 
       if (!postId) {
-        navigate('/PP_9.-Social-Feed/', {
+        navigate('/', {
           state: { toast: { message: 'Post created', type: 'success' } },
         });
       } else {
@@ -134,7 +134,7 @@ function PostManager() {
   const handleConfirmDelete = async () => {
     try {
       await dispatch(deletePosts([postId])).unwrap();
-      navigate('/PP_9.-Social-Feed/', {
+      navigate('/', {
         state: { toast: { message: 'Post deleted', type: 'success' } },
       });
     } catch (err) {

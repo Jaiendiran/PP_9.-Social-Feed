@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHome, FaTimes } from 'react-icons/fa';
@@ -9,7 +9,7 @@ export function HomeBtn() {
   const navigate = useNavigate()
 
   return (
-    <div className={styles.homeIcon} onClick={() => navigate('/PP_9.-Social-Feed/')}>
+    <div className={styles.homeIcon} onClick={() => navigate('/')}>
       <FaHome />
     </div>
   )

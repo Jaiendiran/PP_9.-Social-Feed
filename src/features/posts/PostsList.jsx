@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import SkeletonLoader from '../../components/SkeletonLoader';
 import { FormatDate } from '../../utils/formatDate';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
@@ -128,8 +128,10 @@ function PostsList() {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  if (currentStatus === 'loading') {
-    return <LoadingSpinner />;
+  const isFirstLoad = currentStatus === 'loading' && allPosts.length === 0;
+
+  if (isFirstLoad) {
+    return <SkeletonLoader count={pagination.itemsPerPage} />;
   }
 
   if (currentStatus === 'failed') {
@@ -200,7 +202,11 @@ function PostsList() {
 
       <div className={styles.postsContainer}>
         <div className={styles.postsGrid}>
-          {paginatedPosts.length === 0 && <p>No posts found.</p>}
+          {paginatedPosts.length === 0 && filters.option && externalStatus === 'loading' && (
+            <SkeletonLoader count={pagination.itemsPerPage} />
+          )}
+
+          {paginatedPosts.length === 0 && !(filters.option && externalStatus === 'loading') && <p>No posts found.</p>}
 
           {paginatedPosts.map(post => (
             <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >

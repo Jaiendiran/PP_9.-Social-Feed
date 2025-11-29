@@ -20,8 +20,8 @@ function App() {
           </header>
           <Suspense fallback={<LoadingSpinner size="large" />}>
             <Routes>
-              <Route path="PP_9.-Social-Feed/" element={<Home />} />
-              <Route path="/add" element={<PostManager />} /> 
+              <Route path="/" element={<Home />} />
+              <Route path="/add" element={<PostManager />} />
               <Route path='/posts/:postId' element={<PostManager />} />
             </Routes>
           </Suspense>

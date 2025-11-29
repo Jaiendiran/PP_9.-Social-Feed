@@ -7,7 +7,7 @@
   },
   "hosting": {
     "site": "post-react-blog",
-    "public": "public",
+    "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",

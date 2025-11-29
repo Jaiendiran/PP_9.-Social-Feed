@@ -1,0 +1,110 @@
+.skeletonContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.skeletonCard {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.skeletonCheckbox {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg,
+            var(--skeleton-base) 0%,
+            var(--skeleton-shimmer) 50%,
+            var(--skeleton-base) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    flex-shrink: 0;
+}
+
+.skeletonContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.skeletonTitle {
+    height: 24px;
+    width: 60%;
+    border-radius: 4px;
+    background: linear-gradient(90deg,
+            var(--skeleton-base) 0%,
+            var(--skeleton-shimmer) 50%,
+            var(--skeleton-base) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeletonText {
+    height: 16px;
+    width: 100%;
+    border-radius: 4px;
+    background: linear-gradient(90deg,
+            var(--skeleton-base) 0%,
+            var(--skeleton-shimmer) 50%,
+            var(--skeleton-base) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeletonText:last-of-type {
+    width: 80%;
+}
+
+.skeletonDate {
+    height: 14px;
+    width: 30%;
+    border-radius: 4px;
+    background: linear-gradient(90deg,
+            var(--skeleton-base) 0%,
+            var(--skeleton-shimmer) 50%,
+            var(--skeleton-base) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+.skeletonIcon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: linear-gradient(90deg,
+            var(--skeleton-base) 0%,
+            var(--skeleton-shimmer) 50%,
+            var(--skeleton-base) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    flex-shrink: 0;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* Theme-specific skeleton colors */
+:root {
+    --skeleton-base: #e0e0e0;
+    --skeleton-shimmer: #f5f5f5;
+}
+
+[data-theme="dark"] {
+    --skeleton-base: #2a2a2a;
+    --skeleton-shimmer: #3a3a3a;
+}
