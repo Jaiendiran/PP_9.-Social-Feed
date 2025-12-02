@@ -202,11 +202,11 @@ function PostsList() {
 
       <div className={styles.postsContainer}>
         <div className={styles.postsGrid}>
-          {paginatedPosts.length === 0 && filters.option && externalStatus === 'loading' && (
+          {paginatedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
             <SkeletonLoader count={pagination.itemsPerPage} />
           )}
 
-          {paginatedPosts.length === 0 && !(filters.option && externalStatus === 'loading') && <p>No posts found.</p>}
+          {paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && <p>No posts found.</p>}
 
           {paginatedPosts.map(post => (
             <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
