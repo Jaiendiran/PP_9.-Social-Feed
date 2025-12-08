@@ -11,7 +11,8 @@ const cacheStructure = {
 
 export const cacheKeys = {
   POSTS: `${CACHE_PREFIX}posts`,
-  USER_PREFERENCES: `${CACHE_PREFIX}preferences`
+  USER_PREFERENCES: `${CACHE_PREFIX}preferences`,
+  USER: `${CACHE_PREFIX}user`
 };
 
 export const cacheUtils = {

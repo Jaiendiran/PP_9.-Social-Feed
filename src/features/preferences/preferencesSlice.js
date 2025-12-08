@@ -69,7 +69,6 @@ const preferencesSlice = createSlice({
         return;
       }
       state.pagination.itemsPerPage = items;
-      // Reset to first page when changing items per page
       state.pagination.currentPage = 1;
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },

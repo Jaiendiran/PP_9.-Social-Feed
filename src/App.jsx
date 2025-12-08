@@ -9,6 +9,9 @@ import styles from './App.module.css';
 // Lazy load components
 const Home = lazy(() => import('./routes/Home'));
 const PostManager = lazy(() => import('./features/posts/PostManager'));
+const Login = lazy(() => import('./features/auth/Login'));
+const Signup = lazy(() => import('./features/auth/Signup'));
+const ForgotPassword = lazy(() => import('./features/auth/ForgotPassword'));
 
 function App() {
   return (
@@ -23,6 +26,9 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/add" element={<PostManager />} />
               <Route path='/posts/:postId' element={<PostManager />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
             </Routes>
           </Suspense>
         </ThemeProvider>
