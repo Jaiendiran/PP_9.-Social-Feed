@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { savePost, deletePosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
+import { fetchPosts, savePost, deletePosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -19,6 +19,7 @@ function PostManager() {
   const post = useSelector(state => selectPostByIdCombined(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
+  const { user } = useSelector(state => state.auth);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -38,7 +39,13 @@ function PostManager() {
     }
   }, [postId, post]);
 
-  if (status === 'loading') {
+  useEffect(() => {
+    if (status === 'idle') {
+      dispatch(fetchPosts());
+    }
+  }, [status, dispatch]);
+
+  if (status === 'loading' || status === 'idle') {
     return <LoadingSpinner />;
   }
 
@@ -79,6 +86,8 @@ function PostManager() {
       id,
       title,
       content,
+      userId: post?.userId || user.uid,
+      authorName: post?.authorName || user.displayName || 'Unknown User',
       createdAt: post ? post.createdAt : new Date().toISOString(),
       isExternal: post?.isExternal ?? false
     };
@@ -103,6 +112,7 @@ function PostManager() {
       setToastOpen(true);
     }
   };
+
 
   const handleCancel = () => {
     if (postId) {
@@ -182,6 +192,8 @@ function PostManager() {
           onCancel={handleCancel}
           isModified={title !== post?.title || content !== post?.content}
           status={status}
+          canEdit={user && (user.role === 'Admin' || (post && post.userId === user.uid))}
+          canDelete={user && (user.role === 'Admin' || (post && post.userId === user.uid))}
         />
         <ConfirmDialog
           open={confirmOpen}

@@ -238,7 +238,7 @@ const Profile = () => {
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
                         <h2 className={styles.sectionTitle}>
-                            <FaLock /> Change Password
+                            <FaLock /> Privacy Section
                         </h2>
                         {!showPasswordSection && (
                             <button

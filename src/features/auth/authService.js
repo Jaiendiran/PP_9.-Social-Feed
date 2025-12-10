@@ -39,6 +39,7 @@ const createUserDocument = async (user, additionalData = {}) => {
                 email,
                 displayName: displayName || '',
                 photoURL: photoURL || '',
+                role: 'User',
                 createdAt,
                 updatedAt: createdAt,
                 ...additionalData

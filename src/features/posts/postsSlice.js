@@ -183,13 +183,17 @@ export const selectIsExternalCached = state => state.posts.isExternalCached;
 
 // Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(
-  [selectAllPosts, (state) => state.preferences.filters, (state) => state.posts.externalPosts],
-  (posts, filters, externalPosts) => {
+  [selectAllPosts, (state) => state.preferences.filters, (state) => state.auth.user, (state) => state.posts.externalPosts],
+  (posts, filters, user, externalPosts) => {
     let filteredPosts = posts;
 
     if (filters.option === 'created') {
-      // Only show posts that are explicitly NOT external
-      filteredPosts = filteredPosts.filter(post => !post.isExternal);
+      // Show only posts authored by the authenticated user
+      if (user) {
+        filteredPosts = filteredPosts.filter(post => post.userId === user.uid);
+      } else {
+        filteredPosts = [];
+      }
     } else if (filters.option === 'external') {
       // Show external posts, but prefer local version if edited
       filteredPosts = externalPosts

@@ -32,11 +32,15 @@ function PostsList() {
   const externalPosts = useSelector(state => state.posts.externalPosts);
   const paginatedPosts = useSelector(selectPaginatedPosts);
 
-  const allSelected = selectedIds.length === allPosts.length && allPosts.length > 0;
+  const { user } = useSelector(state => state.auth);
+
+  // Determine authorized posts (for deletion)
+  const authorizedPosts = allPosts.filter(post => user && (user.role === 'Admin' || post.userId === user.uid));
+  const allSelected = selectedIds.length > 0 && selectedIds.every(id => authorizedPosts.some(p => p.id === id)) && selectedIds.length === authorizedPosts.length;
   const isEmpty = allPosts.length === 0;
 
   // Calculate counts for pagination
-  const createdPostsCount = allPosts.filter(p => !p.isExternal).length;
+  const createdPostsCount = allPosts.filter(p => !p.isExternal && user && p.userId === user.uid).length;
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
@@ -110,7 +114,7 @@ function PostsList() {
 
   // Control handlers
   const toggleSelectAll = () => {
-    setSelectedIds(allSelected ? [] : allPosts.map(post => post.id));
+    setSelectedIds(allSelected ? [] : authorizedPosts.map(post => post.id));
   };
 
   const clearSelection = () => {
@@ -206,32 +210,48 @@ function PostsList() {
             <SkeletonLoader count={pagination.itemsPerPage} />
           )}
 
-          {paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && <p>No posts found.</p>}
-
-          {paginatedPosts.map(post => (
-            <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
-              <input
-                type="checkbox"
-                checked={selectedIds.includes(post.id)}
-                onClick={e => e.stopPropagation()}
-                onChange={() => toggleSelect(post.id)}
-              />
-              <div className={styles.postContent}>
-                <h3>{post.title}</h3>
-                <p className={styles.postMsg}>{post.content}</p>
-                <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
-              </div>
-              <FaTrash
-                className={styles.deleteIcon}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setToDelete(post.id);
-                  setIsBatchDelete(false);
-                  setConfirmOpen(true);
-                }}
-              />
+          {paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
+            <div className={styles.emptyState} onClick={() => navigate('/add')}>
+              <FaPlusCircle className={styles.addIcon} />
+              <span className={styles.buttonName}>Create New Post</span>
             </div>
-          ))}
+          )}
+
+          {paginatedPosts.map(post => {
+            const canEditOrDelete = user && (user.role === 'Admin' || post.userId === user.uid);
+            return (
+              <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
+                <input
+                  type="checkbox"
+                  checked={selectedIds.includes(post.id)}
+                  onClick={e => e.stopPropagation()}
+                  onChange={() => toggleSelect(post.id)}
+                  disabled={!canEditOrDelete}
+                  style={{ opacity: canEditOrDelete ? 1 : 0.5, cursor: canEditOrDelete ? 'pointer' : 'not-allowed' }}
+                />
+                <div className={styles.postContent}>
+                  <h3>{post.title}</h3>
+                  <p className={styles.postMsg}>{post.content}</p>
+                  <p className={styles.postAuthor}>
+                    <strong>Author: </strong>
+                    {post.isExternal ? 'Public' : (post.authorName || 'Unknown User')}
+                  </p>
+                  <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
+                </div>
+                {canEditOrDelete && (
+                  <FaTrash
+                    className={styles.deleteIcon}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setToDelete(post.id);
+                      setIsBatchDelete(false);
+                      setConfirmOpen(true);
+                    }}
+                  />
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 

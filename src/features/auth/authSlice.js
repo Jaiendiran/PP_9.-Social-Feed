@@ -28,10 +28,17 @@ export const login = createAsyncThunk('auth/login', async (user, thunkAPI) => {
 
         return userData;
     } catch (error) {
-        const message =
+        let message =
             (error.response && error.response.data && error.response.data.message) ||
             error.message ||
             error.toString();
+
+        if (message.includes('auth/user-not-found') || message.includes('auth/invalid-credential') || message.includes('auth/invalid-email')) {
+            message = 'Invalid user info. Please check your email or sign up.';
+        } else if (message.includes('auth/wrong-password')) {
+            message = 'Invalid password. Please try again.';
+        }
+
         return thunkAPI.rejectWithValue(message);
     }
 });
@@ -71,7 +78,9 @@ export const loginWithGoogle = createAsyncThunk('auth/google', async (_, thunkAP
 // Logout user
 export const logout = createAsyncThunk('auth/logout', async () => {
     await authService.logout();
-    cacheUtils.clear(cacheKeys.USER);
+
+    // cacheUtils.clear(cacheKeys.USER);
+    Object.values(cacheKeys).forEach(key => cacheUtils.clear(key));
 });
 
 // Fetch current user from Firestore

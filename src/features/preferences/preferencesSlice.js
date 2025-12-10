@@ -1,5 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
+import preferencesService from './preferencesService';
+import { createAsyncThunk } from '@reduxjs/toolkit';
 
 // Constants for validation
 const VALID_THEMES = ['light', 'dark'];
@@ -20,8 +22,35 @@ const initialState = {
     itemsPerPage: 5
   },
   theme: 'light',
-  ...cacheUtils.get(cacheKeys.USER_PREFERENCES)
+  theme: 'light',
+  isLoading: false,
+  isError: false,
 };
+
+// Async thunks
+export const fetchUserPreferences = createAsyncThunk(
+  'preferences/fetch',
+  async (uid, thunkAPI) => {
+    try {
+      if (!uid) return null;
+      return await preferencesService.getUserPreferences(uid);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
+
+export const saveUserPreferences = createAsyncThunk(
+  'preferences/save',
+  async ({ uid, preferences }, thunkAPI) => {
+    try {
+      await preferencesService.saveUserPreferences(uid, preferences);
+      return preferences;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.message);
+    }
+  }
+);
 
 const preferencesSlice = createSlice({
   name: 'preferences',
@@ -82,9 +111,27 @@ const preferencesSlice = createSlice({
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },
     resetPreferences: () => {
-      cacheUtils.clear(cacheKeys.USER_PREFERENCES);
       return initialState;
     }
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchUserPreferences.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchUserPreferences.fulfilled, (state, action) => {
+        state.isLoading = false;
+        if (action.payload) {
+          // Merge fetched preferences
+          if (action.payload.theme) state.theme = action.payload.theme;
+          if (action.payload.filters) state.filters = { ...state.filters, ...action.payload.filters };
+          if (action.payload.pagination) state.pagination = { ...state.pagination, ...action.payload.pagination };
+        }
+      })
+      .addCase(fetchUserPreferences.rejected, (state) => {
+        state.isLoading = false;
+        state.isError = true;
+      });
   }
 });
 

@@ -1,6 +1,6 @@
 // Constants for cache configuration
 const CACHE_PREFIX = 'blog_';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_EXPIRY = 40 * 60 * 1000; // 20 minutes in milliseconds
 
 // Cache structure in localStorage
 const cacheStructure = {

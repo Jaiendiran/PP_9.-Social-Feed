@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { FaUser, FaCog, FaSignOutAlt, FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
+import { FaUser, FaHome, FaSignOutAlt, FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
 import { logout } from '../features/auth/authSlice';
 import { selectTheme, setTheme } from '../features/preferences/preferencesSlice';
 import styles from './UserMenu.module.css';
@@ -69,7 +69,7 @@ const UserMenu = () => {
 
     const getUserType = () => {
         // You can extend this to check user roles from Firestore
-        return user.isAdmin ? 'Admin' : 'User';
+        return user.role === 'Admin' ? 'Admin' : 'User';
     };
 
     return (
@@ -113,7 +113,7 @@ const UserMenu = () => {
                         <div className={styles.userDetails}>
                             <div className={styles.userName}>{user.displayName || 'User'}</div>
                             <div className={styles.userEmail}>{user.email}</div>
-                            <span className={`${styles.userBadge} ${user.isAdmin ? styles.adminBadge : styles.regularBadge}`}>
+                            <span className={`${styles.userBadge} ${user.role === 'Admin' ? styles.adminBadge : styles.regularBadge}`}>
                                 {getUserType()}
                             </span>
                         </div>
@@ -124,21 +124,20 @@ const UserMenu = () => {
                     {/* Menu Items */}
                     <div className={styles.menuItems}>
                         <Link
+                            to="/"
+                            className={styles.menuItem}
+                            onClick={() => setIsOpen(false)}
+                        >
+                            <FaHome className={styles.menuIcon} />
+                            <span>Home</span>
+                        </Link>
+                        <Link
                             to="/profile"
                             className={styles.menuItem}
                             onClick={() => setIsOpen(false)}
                         >
                             <FaUser className={styles.menuIcon} />
                             <span>Profile</span>
-                        </Link>
-
-                        <Link
-                            to="/"
-                            className={styles.menuItem}
-                            onClick={() => setIsOpen(false)}
-                        >
-                            <FaCog className={styles.menuIcon} />
-                            <span>Settings</span>
                         </Link>
 
                         <div className={styles.divider}></div>
