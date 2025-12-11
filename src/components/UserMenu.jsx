@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaUser, FaHome, FaSignOutAlt, FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
 import { logout, selectUser } from '../features/auth/authSlice';
-import { selectTheme, setTheme } from '../features/preferences/preferencesSlice';
+import { selectTheme, setTheme, resetPreferences, saveUserPreferences } from '../features/preferences/preferencesSlice';
 import styles from './UserMenu.module.css';
 
 const UserMenu = React.memo(function UserMenu() {
@@ -13,6 +13,8 @@ const UserMenu = React.memo(function UserMenu() {
     const navigate = useNavigate();
     const user = useSelector(selectUser);
     const theme = useSelector(selectTheme);
+    const preferences = useSelector(state => state.preferences);
+    const { filters, pagination } = preferences;
 
     // Close menu when clicking outside
     useEffect(() => {
@@ -42,24 +44,45 @@ const UserMenu = React.memo(function UserMenu() {
         }
     }, [isOpen]);
 
-    const handleLogout = useCallback(() => {
-        dispatch(logout());
+    const handleToggleMenu = useCallback(() => {
+        setIsOpen(prev => !prev);
+    }, []);
+
+    const handleMenuClose = useCallback(() => {
         setIsOpen(false);
-        navigate('/login');
-    }, [dispatch, navigate]);
+    }, []);
 
     const handleThemeToggle = useCallback(() => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         dispatch(setTheme(newTheme));
     }, [dispatch, theme]);
 
-    const handleMenuClose = useCallback(() => {
-        setIsOpen(false);
-    }, []);
+    const handleLogout = useCallback(async () => {
+        try {
+            // 1. Force save current prefs to Firestore before they are lost
+            if (user?.uid) {
+                await dispatch(saveUserPreferences({
+                    uid: user.uid,
+                    preferences: { theme, filters, pagination }
+                })).unwrap();
+            }
+        } catch (e) {
+            console.error("Save failed or no changes to save", e);
+        }
 
-    const handleToggleMenu = useCallback(() => {
-        setIsOpen(prev => !prev);
-    }, []);
+        // 2. Reset preferences state (clears Redux slice)
+        dispatch(resetPreferences());
+
+        // 3. Reset DOM immediately to remove dark theme
+        document.body.setAttribute('data-theme', 'light');
+
+        // 4. Dispatch logout to clear auth state
+        await dispatch(logout());
+
+        // 5. Close menu and navigate
+        setIsOpen(false);
+        navigate('/login');
+    }, [dispatch, navigate, user, theme, filters, pagination]);
 
     const initials = useMemo(() => {
         if (!user) return 'U';

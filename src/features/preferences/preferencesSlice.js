@@ -1,7 +1,7 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 import preferencesService from './preferencesService';
-import { createAsyncThunk } from '@reduxjs/toolkit';
+import { logout } from '../auth/authSlice';
 
 // Constants for validation
 const VALID_THEMES = ['light', 'dark'];
@@ -48,6 +48,7 @@ const initialState = {
     : 'light',
   isLoading: false,
   isError: false,
+  isInitialized: false, // Tracks if Firestore preferences have been loaded
 };
 
 // Async thunks
@@ -140,6 +141,7 @@ const preferencesSlice = createSlice({
       state.theme = 'light';
       state.isLoading = false;
       state.isError = false;
+      state.isInitialized = false; // Reset initialization state
       // Clear the preferences cache
       cacheUtils.clear(cacheKeys.USER_PREFERENCES);
     }
@@ -157,8 +159,8 @@ const preferencesSlice = createSlice({
           const firestoreTimestamp = action.payload.updatedAt || 0;
 
           // If local cache is newer or same age, skip Firestore overwrite
-          if (localCacheTimestamp && localCacheTimestamp >= firestoreTimestamp) {
-            console.debug('Local preferences are newer, skipping Firestore overwrite');
+          // EXCEPTION: Always trust Firestore on initial load (!state.isInitialized) to prevent phantom defaults from blocking sync
+          if (state.isInitialized && localCacheTimestamp && localCacheTimestamp >= firestoreTimestamp) {
             return;
           }
 
@@ -174,10 +176,23 @@ const preferencesSlice = createSlice({
             pagination: state.pagination
           });
         }
+        // Mark as initialized regardless of whether Firestore had data
+        state.isInitialized = true;
       })
       .addCase(fetchUserPreferences.rejected, (state) => {
         state.isLoading = false;
         state.isError = true;
+      })
+      .addCase(logout.fulfilled, (state) => {
+        // Reset to hardcoded defaults on logout
+        state.filters = { ...defaultFilters };
+        state.pagination = { ...defaultPagination };
+        state.theme = 'light';
+        state.isLoading = false;
+        state.isError = false;
+        state.isInitialized = false; // Reset initialization state
+        // Verify cache is cleared
+        cacheUtils.clear(cacheKeys.USER_PREFERENCES);
       });
   }
 });
@@ -187,6 +202,7 @@ export const { setSearchFilter, setSortPreference, setPostSelection, setCurrentP
 export const selectFilters = state => state.preferences.filters;
 export const selectPagination = state => state.preferences.pagination;
 export const selectTheme = state => state.preferences.theme;
+export const selectIsInitialized = state => state.preferences.isInitialized;
 // Constants exports for components
 export const preferencesConstants = { VALID_THEMES, MIN_ITEMS_PER_PAGE, MAX_ITEMS_PER_PAGE, VALID_SORT_FIELDS, VALID_SORT_ORDERS };
 

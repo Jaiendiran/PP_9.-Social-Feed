@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectTheme, fetchUserPreferences, saveUserPreferences } from './features/preferences/preferencesSlice';
+import { selectTheme, fetchUserPreferences, saveUserPreferences, selectIsInitialized } from './features/preferences/preferencesSlice';
 import { selectUser } from './features/auth/authSlice';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -22,6 +22,7 @@ function App() {
   const currentTheme = useSelector(selectTheme);
   const user = useSelector(selectUser);
   const preferences = useSelector(state => state.preferences);
+  const isInitialized = useSelector(selectIsInitialized);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -43,15 +44,16 @@ function App() {
   }), [preferences.theme, preferences.filters, preferences.pagination]);
 
   // Sync preferences to Firestore with increased debounce
+  // IMPORTANT: Only sync AFTER initial Firestore preferences have been loaded
   useEffect(() => {
-    if (user && user.uid) {
+    if (user && user.uid && isInitialized) {
       const timer = setTimeout(() => {
         dispatch(saveUserPreferences({ uid: user.uid, preferences: prefsToSave }));
       }, 3000); // Increased debounce to 3 seconds to reduce Firestore writes
 
       return () => clearTimeout(timer);
     }
-  }, [prefsToSave, user, dispatch]);
+  }, [prefsToSave, user, dispatch, isInitialized]);
 
   return (
     <Router>

@@ -151,10 +151,7 @@ const postsSlice = createSlice({
       .addCase(fetchExternalPosts.fulfilled, (state, action) => {
         state.externalStatus = 'succeeded';
         const { posts, start } = action.payload;
-        if (state.externalPosts.length < 100) {
-          // Initialize with empty slots if needed, or just assign to index
-          // Array assignment at index > length automatically fills with empty/undefined
-        }
+
         posts.forEach((post, index) => {
           state.externalPosts[start + index] = post;
         });

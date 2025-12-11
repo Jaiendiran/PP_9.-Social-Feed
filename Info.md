@@ -19,5 +19,22 @@
 
 ###### Bugs:
 
-* Noticed a preferences sync issue.
+* Noticed a preferences sync issue. (Fixed)
 * The app loads all the posts, but it should be optimized to load the posts based on the options.
+
+
+
+
+
+
+
+
+
+
+
+Pagination is already implemented, but it filters within the app not directly from the firestore. I have a plan, analyze it and let me know will it work or not.
+
+
+
+
+
