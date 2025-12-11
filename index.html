@@ -9,6 +9,19 @@
 </head>
 
 <body>
+  <script>
+    (function () {
+      try {
+        var cached = localStorage.getItem('blog_preferences');
+        if (cached) {
+          var parsed = JSON.parse(cached);
+          if (parsed && parsed.data && parsed.data.theme) {
+            document.body.setAttribute('data-theme', parsed.data.theme);
+          }
+        }
+      } catch (e) { }
+    })();
+  </script>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>

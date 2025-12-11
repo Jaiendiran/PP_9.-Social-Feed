@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaHome, FaTimes } from 'react-icons/fa';
 
 
 // Home button component
-export function HomeBtn() {
+export const HomeBtn = React.memo(function HomeBtn() {
   const navigate = useNavigate()
 
   return (
@@ -13,9 +13,10 @@ export function HomeBtn() {
       <FaHome />
     </div>
   )
-}
+});
+
 // Back arrow component
-export function BackArrow({ currentPage }) {
+export const BackArrow = React.memo(function BackArrow({ currentPage }) {
   const navigate = useNavigate()
 
   return (
@@ -23,9 +24,10 @@ export function BackArrow({ currentPage }) {
       <FaArrowLeft /> Back
     </div>
   )
-}
+});
+
 // New post button
-export function NewPostButton() {
+export const NewPostButton = React.memo(function NewPostButton() {
   const navigate = useNavigate()
 
   return (
@@ -33,17 +35,19 @@ export function NewPostButton() {
       + Add Post
     </button>
   );
-}
+});
+
 // Select all button
-export function SelectAllButton({ allSelected, onToggle }) {
+export const SelectAllButton = React.memo(function SelectAllButton({ allSelected, onToggle }) {
   return (
     <button className={styles.button} onClick={onToggle}>
       {allSelected ? 'Deselect All' : 'Select All'}
     </button>
   );
-}
+});
+
 // Clear selection button
-export function ClearSelectionButton({ disabled, onClear }) {
+export const ClearSelectionButton = React.memo(function ClearSelectionButton({ disabled, onClear }) {
   return (
     <button
       className={`${styles.button} ${disabled ? styles.disabled : ''}`}
@@ -53,23 +57,25 @@ export function ClearSelectionButton({ disabled, onClear }) {
       Clear Selection
     </button>
   );
-}
+});
+
 // Delete selected button
-export function DeleteSelectedButton({ onDelete }) {
+export const DeleteSelectedButton = React.memo(function DeleteSelectedButton({ onDelete }) {
   return (
     <button className={styles.dangerButton} onClick={onDelete}>
       Delete Selected
     </button>
   );
-}
+});
+
 // Sorting controls
-export function SortControls({ sortBy, sortOrder, onSort }) {
-  const toggleSort = key => {
+export const SortControls = React.memo(function SortControls({ sortBy, sortOrder, onSort }) {
+  const toggleSort = useCallback((key) => {
     const newOrder = (sortBy === key && sortOrder === 'asc') ? 'desc' : 'asc';
     onSort(key, newOrder);
-  };
+  }, [sortBy, sortOrder, onSort]);
 
-  const getIcon = key => {
+  const getIcon = (key) => {
     if (sortBy !== key) return '⬍';
     return sortOrder === 'asc' ? '🔼' : '🔽';
   };
@@ -92,9 +98,10 @@ export function SortControls({ sortBy, sortOrder, onSort }) {
       </button>
     </div>
   );
-}
+});
+
 // Dropdown
-export function Dropdown({ selectedOption, onChange }) {
+export const Dropdown = React.memo(function Dropdown({ selectedOption, onChange }) {
   return (
     <select
       className={styles.dropdown}
@@ -106,26 +113,34 @@ export function Dropdown({ selectedOption, onChange }) {
       <option value="external">External</option>
     </select>
   );
-}
+});
+
 // Pagination controls
-export function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange }) {
-  const handleItemsPerPageChange = (e) => {
+export const PaginationControls = React.memo(function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange }) {
+  const handleItemsPerPageChange = useCallback((e) => {
     const value = parseInt(e.target.value, 10);
     onItemsPerPageChange(value);
     // Reset to page 1 when changing items per page
     onPageChange(1);
     setSearchParams({ page: '1' });
-  };
+  }, [onItemsPerPageChange, onPageChange, setSearchParams]);
+
+  const handlePrevPage = useCallback(() => {
+    onPageChange(currentPage - 1);
+    setSearchParams({ page: (currentPage - 1).toString() });
+  }, [currentPage, onPageChange, setSearchParams]);
+
+  const handleNextPage = useCallback(() => {
+    onPageChange(currentPage + 1);
+    setSearchParams({ page: (currentPage + 1).toString() });
+  }, [currentPage, onPageChange, setSearchParams]);
 
   return (
     <div className={styles.pagination}>
       <div className={styles.paginationControls}>
         <button
           className={styles.pageButton}
-          onClick={() => {
-            onPageChange(currentPage - 1);
-            setSearchParams({ page: (currentPage - 1).toString() });
-          }}
+          onClick={handlePrevPage}
           disabled={currentPage === 1}
         >
           Prev
@@ -137,10 +152,7 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
 
         <button
           className={styles.pageButton}
-          onClick={() => {
-            onPageChange(currentPage + 1);
-            setSearchParams({ page: (currentPage + 1).toString() });
-          }}
+          onClick={handleNextPage}
           disabled={currentPage === totalPages}
         >
           Next
@@ -164,9 +176,10 @@ export function PaginationControls({ currentPage, totalPages, onPageChange, setS
       </div>
     </div>
   );
-}
+});
+
 // Search bar component
-export function SearchBar({ onSearch, initialValue }) {
+export const SearchBar = React.memo(function SearchBar({ onSearch, initialValue }) {
   const [localValue, setLocalValue] = useState(initialValue || '');
 
   useEffect(() => {
@@ -181,13 +194,13 @@ export function SearchBar({ onSearch, initialValue }) {
     return () => clearTimeout(timer);
   }, [localValue, onSearch]);
 
-  const handleChange = (e) => {
+  const handleChange = useCallback((e) => {
     setLocalValue(e.target.value);
-  };
+  }, []);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     setLocalValue('');
-  };
+  }, []);
 
   return (
     <div className={styles.searchWrapper}>
@@ -210,4 +223,4 @@ export function SearchBar({ onSearch, initialValue }) {
       )}
     </div>
   );
-}
+});

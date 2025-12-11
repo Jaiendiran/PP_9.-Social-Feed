@@ -19,5 +19,5 @@
 
 ###### Bugs:
 
-* Noticed an optimization issue.
-* 
+* Noticed a preferences sync issue.
+* The app loads all the posts, but it should be optimized to load the posts based on the options.

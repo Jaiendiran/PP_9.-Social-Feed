@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts } from './postsSlice';
+import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, selectExternalPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
+import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
 import { FaPlusCircle, FaTrash } from 'react-icons/fa';
@@ -29,18 +30,31 @@ function PostsList() {
   const currentError = filters.option === 'external' ? externalError : error;
 
   const allPosts = useSelector(selectAllPosts);
-  const externalPosts = useSelector(state => state.posts.externalPosts);
+  const externalPosts = useSelector(selectExternalPosts);
   const paginatedPosts = useSelector(selectPaginatedPosts);
 
-  const { user } = useSelector(state => state.auth);
+  const user = useSelector(selectUser);
 
-  // Determine authorized posts (for deletion)
-  const authorizedPosts = allPosts.filter(post => user && (user.role === 'Admin' || post.userId === user.uid));
-  const allSelected = selectedIds.length > 0 && selectedIds.every(id => authorizedPosts.some(p => p.id === id)) && selectedIds.length === authorizedPosts.length;
+  // Memoize computed values to prevent recalculation on every render
+  const authorizedPosts = useMemo(() =>
+    allPosts.filter(post => user && (user.role === 'Admin' || post.userId === user.uid)),
+    [allPosts, user]
+  );
+
+  const allSelected = useMemo(() =>
+    selectedIds.length > 0 &&
+    selectedIds.every(id => authorizedPosts.some(p => p.id === id)) &&
+    selectedIds.length === authorizedPosts.length,
+    [selectedIds, authorizedPosts]
+  );
+
   const isEmpty = allPosts.length === 0;
 
   // Calculate counts for pagination
-  const createdPostsCount = allPosts.filter(p => !p.isExternal && user && p.userId === user.uid).length;
+  const createdPostsCount = useMemo(() =>
+    allPosts.filter(p => !p.isExternal && user && p.userId === user.uid).length,
+    [allPosts, user]
+  );
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toDelete, setToDelete] = useState(null);
@@ -62,6 +76,9 @@ function PostsList() {
     }
   }, [dispatch, filters.option]);
 
+  // Memoize external posts length check to avoid dependency issues
+  const externalPostsLength = externalPosts.length;
+
   useEffect(() => {
     // Fetch external posts if option is 'all' or 'external'
     if (filters.option === 'external' || filters.option === 'all') {
@@ -76,7 +93,7 @@ function PostsList() {
         dispatch(fetchExternalPosts({ start, limit }));
       }
     }
-  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage, externalPosts, externalStatus]);
+  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage, externalPostsLength, externalStatus]);
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -89,7 +106,7 @@ function PostsList() {
     }
   }, [location.pathname]);
 
-  // Filter and sort handlers
+  // Memoized handlers to prevent unnecessary re-renders
   const handleSearch = useCallback((query) => {
     if (query !== filters.search) {
       dispatch(setSearchFilter(query));
@@ -98,39 +115,56 @@ function PostsList() {
     }
   }, [dispatch, setSearchParams, filters.search]);
 
-  const handleSort = (key, order) => {
+  const handleSort = useCallback((key, order) => {
     dispatch(setSortPreference({ key, order }));
-  };
+  }, [dispatch]);
 
-  const handlePostSelection = (option) => {
+  const handlePostSelection = useCallback((option) => {
     dispatch(setPostSelection(option));
     setSearchParams({ page: '1' });
-  };
+  }, [dispatch, setSearchParams]);
 
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     dispatch(setCurrentPage(page));
     setSearchParams({ page: page.toString() });
-  };
+  }, [dispatch, setSearchParams]);
 
-  // Control handlers
-  const toggleSelectAll = () => {
-    setSelectedIds(allSelected ? [] : authorizedPosts.map(post => post.id));
-  };
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds(prev => prev.length === authorizedPosts.length ? [] : authorizedPosts.map(post => post.id));
+  }, [authorizedPosts]);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectedIds([]);
-  };
+  }, []);
 
-  const handleBatchDeleteClick = () => {
+  const handleBatchDeleteClick = useCallback(() => {
     if (!selectedIds || selectedIds.length === 0) return;
     setToDelete([...selectedIds]);
     setIsBatchDelete(true);
     setConfirmOpen(true);
-  };
+  }, [selectedIds]);
 
-  const toggleSelect = id => {
+  const toggleSelect = useCallback((id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  };
+  }, []);
+
+  const handleItemsPerPageChange = useCallback((value) => {
+    dispatch(setItemsPerPage(value));
+  }, [dispatch]);
+
+  const handleOpenDeleteConfirm = useCallback((postId) => {
+    setToDelete(postId);
+    setIsBatchDelete(false);
+    setConfirmOpen(true);
+  }, []);
+
+  const handleCloseConfirm = useCallback(() => {
+    setConfirmOpen(false);
+  }, []);
+
+  const handleCloseToast = useCallback(() => {
+    setToastOpen(false);
+  }, []);
 
   const isFirstLoad = currentStatus === 'loading' && allPosts.length === 0;
 
@@ -268,21 +302,21 @@ function PostsList() {
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams}
           itemsPerPage={pagination.itemsPerPage}
-          onItemsPerPageChange={(value) => dispatch(setItemsPerPage(value))}
+          onItemsPerPageChange={handleItemsPerPageChange}
         />
       )}
 
       <ConfirmDialog
         open={confirmOpen}
         title="Delete post(s)?"
-        message={isBatchDelete ? `Delete ${toDelete.length} selected posts? This cannot be undone.` : `Delete this post? This cannot be undone.`}
-        onCancel={() => setConfirmOpen(false)}
+        message={isBatchDelete ? `Delete ${toDelete?.length} selected posts? This cannot be undone.` : `Delete this post? This cannot be undone.`}
+        onCancel={handleCloseConfirm}
         onConfirm={handleConfirmDelete}
       />
 
-      <Toast open={toastOpen} message={toastMsg} type={toastType} onClose={() => setToastOpen(false)} />
+      <Toast open={toastOpen} message={toastMsg} type={toastType} onClose={handleCloseToast} />
     </div>
   );
 }
 
-export default PostsList;
+export default React.memo(PostsList);

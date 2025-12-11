@@ -1,17 +1,17 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { FaUser, FaHome, FaSignOutAlt, FaMoon, FaSun, FaUserCircle } from 'react-icons/fa';
-import { logout } from '../features/auth/authSlice';
+import { logout, selectUser } from '../features/auth/authSlice';
 import { selectTheme, setTheme } from '../features/preferences/preferencesSlice';
 import styles from './UserMenu.module.css';
 
-const UserMenu = () => {
+const UserMenu = React.memo(function UserMenu() {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { user } = useSelector((state) => state.auth);
+    const user = useSelector(selectUser);
     const theme = useSelector(selectTheme);
 
     // Close menu when clicking outside
@@ -42,22 +42,28 @@ const UserMenu = () => {
         }
     }, [isOpen]);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         dispatch(logout());
         setIsOpen(false);
         navigate('/login');
-    };
+    }, [dispatch, navigate]);
 
-    const handleThemeToggle = () => {
+    const handleThemeToggle = useCallback(() => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         dispatch(setTheme(newTheme));
-    };
+    }, [dispatch, theme]);
 
-    if (!user) {
-        return null;
-    }
+    const handleMenuClose = useCallback(() => {
+        setIsOpen(false);
+    }, []);
 
-    const getInitials = (name) => {
+    const handleToggleMenu = useCallback(() => {
+        setIsOpen(prev => !prev);
+    }, []);
+
+    const initials = useMemo(() => {
+        if (!user) return 'U';
+        const name = user.displayName || user.email;
         if (!name) return 'U';
         return name
             .split(' ')
@@ -65,18 +71,21 @@ const UserMenu = () => {
             .join('')
             .toUpperCase()
             .slice(0, 2);
-    };
+    }, [user]);
 
-    const getUserType = () => {
-        // You can extend this to check user roles from Firestore
-        return user.role === 'Admin' ? 'Admin' : 'User';
-    };
+    const userType = useMemo(() => {
+        return user?.role === 'Admin' ? 'Admin' : 'User';
+    }, [user?.role]);
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <div className={styles.userMenuContainer} ref={menuRef}>
             <button
                 className={styles.avatarButton}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={handleToggleMenu}
                 aria-label="User menu"
                 aria-expanded={isOpen}
             >
@@ -88,7 +97,7 @@ const UserMenu = () => {
                     />
                 ) : (
                     <div className={styles.avatarPlaceholder}>
-                        {getInitials(user.displayName || user.email)}
+                        {initials}
                     </div>
                 )}
             </button>
@@ -114,7 +123,7 @@ const UserMenu = () => {
                             <div className={styles.userName}>{user.displayName || 'User'}</div>
                             <div className={styles.userEmail}>{user.email}</div>
                             <span className={`${styles.userBadge} ${user.role === 'Admin' ? styles.adminBadge : styles.regularBadge}`}>
-                                {getUserType()}
+                                {userType}
                             </span>
                         </div>
                     </div>
@@ -126,7 +135,7 @@ const UserMenu = () => {
                         <Link
                             to="/"
                             className={styles.menuItem}
-                            onClick={() => setIsOpen(false)}
+                            onClick={handleMenuClose}
                         >
                             <FaHome className={styles.menuIcon} />
                             <span>Home</span>
@@ -134,7 +143,7 @@ const UserMenu = () => {
                         <Link
                             to="/profile"
                             className={styles.menuItem}
-                            onClick={() => setIsOpen(false)}
+                            onClick={handleMenuClose}
                         >
                             <FaUser className={styles.menuIcon} />
                             <span>Profile</span>
@@ -175,6 +184,6 @@ const UserMenu = () => {
             )}
         </div>
     );
-};
+});
 
 export default UserMenu;

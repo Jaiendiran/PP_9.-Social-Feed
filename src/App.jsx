@@ -1,7 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Suspense, lazy, useEffect } from 'react';
+import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, fetchUserPreferences, saveUserPreferences } from './features/preferences/preferencesSlice';
+import { selectUser } from './features/auth/authSlice';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import UserMenu from './components/UserMenu';
@@ -19,7 +20,7 @@ const Profile = lazy(() => import('./features/auth/Profile'));
 
 function App() {
   const currentTheme = useSelector(selectTheme);
-  const { user } = useSelector(state => state.auth);
+  const user = useSelector(selectUser);
   const preferences = useSelector(state => state.preferences);
   const dispatch = useDispatch();
 
@@ -34,23 +35,23 @@ function App() {
     }
   }, [user, dispatch]);
 
-  // Sync preferences to Firestore
+  // Memoize preferences to save to prevent object recreation
+  const prefsToSave = useMemo(() => ({
+    theme: preferences.theme,
+    filters: preferences.filters,
+    pagination: preferences.pagination
+  }), [preferences.theme, preferences.filters, preferences.pagination]);
+
+  // Sync preferences to Firestore with increased debounce
   useEffect(() => {
     if (user && user.uid) {
-      // Create a stripped down version of preferences to save (excluding loading states)
-      const prefsToSave = {
-        theme: preferences.theme,
-        filters: preferences.filters,
-        pagination: preferences.pagination
-      };
-
       const timer = setTimeout(() => {
         dispatch(saveUserPreferences({ uid: user.uid, preferences: prefsToSave }));
-      }, 1000); // Debounce for 1 second
+      }, 3000); // Increased debounce to 3 seconds to reduce Firestore writes
 
       return () => clearTimeout(timer);
     }
-  }, [preferences.theme, preferences.filters, preferences.pagination, user, dispatch]);
+  }, [prefsToSave, user, dispatch]);
 
   return (
     <Router>

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPosts, savePost, deletePosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
+import { selectUser } from '../auth/authSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -19,7 +20,7 @@ function PostManager() {
   const post = useSelector(state => selectPostByIdCombined(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
-  const { user } = useSelector(state => state.auth);
+  const user = useSelector(selectUser);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -45,6 +46,23 @@ function PostManager() {
     }
   }, [status, dispatch]);
 
+  // All useCallback hooks MUST be defined before any early returns (React rules of hooks)
+  const handleSetTitle = useCallback((value) => {
+    setTitle(value);
+    setErrors(prev => ({ ...prev, title: '' }));
+  }, []);
+
+  const handleSetContent = useCallback((value) => {
+    setContent(value);
+    setErrors(prev => ({ ...prev, content: '' }));
+  }, []);
+
+  const handleEditToggle = useCallback(() => {
+    setIsEditing(true);
+    setErrors({});
+  }, []);
+
+  // Early returns AFTER all hooks are defined
   if (status === 'loading' || status === 'idle') {
     return <LoadingSpinner />;
   }
@@ -126,20 +144,6 @@ function PostManager() {
   };
 
 
-  const handleSetTitle = (value) => {
-    setTitle(value);
-    setErrors(prev => ({ ...prev, title: '' }));
-  };
-
-  const handleSetContent = (value) => {
-    setContent(value);
-    setErrors(prev => ({ ...prev, content: '' }));
-  };
-
-  const handleEditToggle = () => {
-    setIsEditing(true);
-    setErrors({});
-  };
 
   const handleConfirmDelete = async () => {
     try {
@@ -209,4 +213,4 @@ function PostManager() {
   );
 }
 
-export default PostManager;
+export default React.memo(PostManager);

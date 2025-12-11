@@ -177,6 +177,7 @@ export const {
 // Additional selectors for status, error, filters, and pagination
 export const selectPostsStatus = state => state.posts.status;
 export const selectPostsError = state => state.posts.error;
+export const selectExternalPosts = state => state.posts.externalPosts;
 export const selectExternalPostsStatus = state => state.posts.externalStatus;
 export const selectExternalPostsError = state => state.posts.externalError;
 export const selectIsExternalCached = state => state.posts.isExternalCached;

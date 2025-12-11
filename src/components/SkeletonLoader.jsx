@@ -1,3 +1,4 @@
+import React from 'react';
 import styles from './SkeletonLoader.module.css';
 
 function SkeletonLoader({ count = 5 }) {
@@ -19,4 +20,4 @@ function SkeletonLoader({ count = 5 }) {
     );
 }
 
-export default SkeletonLoader;
+export default React.memo(SkeletonLoader);

@@ -27,9 +27,14 @@ const saveUserPreferences = async (uid, preferences) => {
 
     try {
         const prefsRef = doc(db, 'users', uid, 'preferences', PREFS_DOC_ID);
+        // Add timestamp for sync comparison
+        const prefsWithTimestamp = {
+            ...preferences,
+            updatedAt: Date.now()
+        };
         // Use setDoc with merge: true to create if not exists or update fields
-        await setDoc(prefsRef, preferences, { merge: true });
-        return preferences;
+        await setDoc(prefsRef, prefsWithTimestamp, { merge: true });
+        return prefsWithTimestamp;
     } catch (error) {
         console.error('Error saving user preferences:', error);
         throw error;

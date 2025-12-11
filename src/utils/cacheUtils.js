@@ -1,6 +1,6 @@
 // Constants for cache configuration
 const CACHE_PREFIX = 'blog_';
-const CACHE_EXPIRY = 40 * 60 * 1000; // 20 minutes in milliseconds
+const CACHE_EXPIRY = 40 * 60 * 1000; // 40 minutes in milliseconds
 
 // Cache structure in localStorage
 const cacheStructure = {
@@ -43,6 +43,18 @@ export const cacheUtils = {
       return data;
     } catch (error) {
       console.error('Cache read error:', error);
+      return null;
+    }
+  },
+
+  // Get timestamp of when cache was last updated
+  getTimestamp: (key) => {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+      const { timestamp } = JSON.parse(cached);
+      return timestamp || null;
+    } catch (error) {
       return null;
     }
   },

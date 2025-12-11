@@ -18,9 +18,9 @@ const Login = () => {
             navigate('/');
         }
 
-        return () => {
-            dispatch(reset());
-        };
+        // return () => {
+        //     dispatch(reset());
+        // };
     }, [user, isSuccess, navigate, dispatch]);
 
     const handleChange = (e) => {

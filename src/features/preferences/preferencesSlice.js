@@ -10,19 +10,42 @@ const MAX_ITEMS_PER_PAGE = 50;
 const VALID_SORT_FIELDS = ['date', 'title'];
 const VALID_SORT_ORDERS = ['asc', 'desc'];
 
+// Get cached preferences for initial state (prevents flash on page refresh)
+const getCachedPreferences = () => {
+  try {
+    const cached = cacheUtils.get(cacheKeys.USER_PREFERENCES);
+    return cached || null;
+  } catch (e) {
+    return null;
+  }
+};
+
+const cachedPrefs = getCachedPreferences();
+
+// Default values
+const defaultFilters = {
+  search: '',
+  sortBy: 'date',
+  sortOrder: 'desc',
+  option: 'created'
+};
+
+const defaultPagination = {
+  currentPage: 1,
+  itemsPerPage: 5
+};
+
+// Initialize with cached values if available, otherwise use defaults
 const initialState = {
-  filters: {
-    search: '',
-    sortBy: 'date',
-    sortOrder: 'desc',
-    option: 'created'
-  },
-  pagination: {
-    currentPage: 1,
-    itemsPerPage: 5
-  },
-  theme: 'light',
-  theme: 'light',
+  filters: cachedPrefs?.filters
+    ? { ...defaultFilters, ...cachedPrefs.filters }
+    : defaultFilters,
+  pagination: cachedPrefs?.pagination
+    ? { ...defaultPagination, ...cachedPrefs.pagination }
+    : defaultPagination,
+  theme: (cachedPrefs?.theme && VALID_THEMES.includes(cachedPrefs.theme))
+    ? cachedPrefs.theme
+    : 'light',
   isLoading: false,
   isError: false,
 };
@@ -110,8 +133,15 @@ const preferencesSlice = createSlice({
       state.theme = theme;
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },
-    resetPreferences: () => {
-      return initialState;
+    resetPreferences: (state) => {
+      // Reset to hardcoded defaults, not cached values
+      state.filters = { ...defaultFilters };
+      state.pagination = { ...defaultPagination };
+      state.theme = 'light';
+      state.isLoading = false;
+      state.isError = false;
+      // Clear the preferences cache
+      cacheUtils.clear(cacheKeys.USER_PREFERENCES);
     }
   },
   extraReducers: (builder) => {
@@ -122,10 +152,27 @@ const preferencesSlice = createSlice({
       .addCase(fetchUserPreferences.fulfilled, (state, action) => {
         state.isLoading = false;
         if (action.payload) {
-          // Merge fetched preferences
+          // Compare timestamps: only apply Firestore data if it's newer than local cache
+          const localCacheTimestamp = cacheUtils.getTimestamp(cacheKeys.USER_PREFERENCES);
+          const firestoreTimestamp = action.payload.updatedAt || 0;
+
+          // If local cache is newer or same age, skip Firestore overwrite
+          if (localCacheTimestamp && localCacheTimestamp >= firestoreTimestamp) {
+            console.debug('Local preferences are newer, skipping Firestore overwrite');
+            return;
+          }
+
+          // Firestore data is newer, apply it
           if (action.payload.theme) state.theme = action.payload.theme;
           if (action.payload.filters) state.filters = { ...state.filters, ...action.payload.filters };
           if (action.payload.pagination) state.pagination = { ...state.pagination, ...action.payload.pagination };
+
+          // Update local cache with Firestore data
+          cacheUtils.set(cacheKeys.USER_PREFERENCES, {
+            theme: state.theme,
+            filters: state.filters,
+            pagination: state.pagination
+          });
         }
       })
       .addCase(fetchUserPreferences.rejected, (state) => {
