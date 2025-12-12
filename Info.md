@@ -21,6 +21,7 @@
 
 * Noticed a preferences sync issue. (Fixed)
 * The app loads all the posts, but it should be optimized to load the posts based on the options.
+* Found optimization and performance issues.
 
 
 
@@ -32,9 +33,11 @@
 
 
 
-Pagination is already implemented, but it filters within the app not directly from the firestore. I have a plan, analyze it and let me know will it work or not.
+For now, the app loads all the post from the firestore. 
 
 
+
+In the app, there are three options which filters the data. The options such as All, Created, and External. If the option switched to 'Created', then the app gets the posts created by the users from the firestore. If the option switched to 'External', then the app fetches data from a pubic API
 
 
 
