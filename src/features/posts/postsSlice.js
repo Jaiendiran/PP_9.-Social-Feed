@@ -95,6 +95,7 @@ export const fetchExternalPosts = createAsyncThunk(
           isExternal: true,
           createdAt: new Date(1672531200000 - post.id * 3600000).toISOString(),
         })),
+        // start matches payload structure, though we don't strictly need it with replace logic
         start
       };
     } catch (err) {
@@ -119,7 +120,12 @@ const initialState = postsAdapter.getInitialState({
 const postsSlice = createSlice({
   name: 'posts',
   initialState,
-  reducers: {},
+  reducers: {
+    clearExternalPosts: (state) => {
+      state.externalPosts = [];
+      state.externalStatus = 'idle';
+    }
+  },
   extraReducers: builder => {
     builder
       // Fetch posts cases
@@ -147,24 +153,31 @@ const postsSlice = createSlice({
       .addCase(fetchExternalPosts.pending, (state) => {
         state.externalStatus = 'loading';
         state.externalError = null;
+        // Optional: clear posts on loading to show skeleton
+        state.externalPosts = [];
       })
       .addCase(fetchExternalPosts.fulfilled, (state, action) => {
         state.externalStatus = 'succeeded';
-        const { posts, start } = action.payload;
-
-        posts.forEach((post, index) => {
-          state.externalPosts[start + index] = post;
-        });
-        // We don't set isExternalCached globally true anymore, as it depends on the range
+        state.externalPosts = action.payload.posts; // REPLACE, do not append
+        // No need to map indices as we are replacing the view
       })
       .addCase(fetchExternalPosts.rejected, (state, action) => {
         state.externalStatus = 'failed';
         state.externalError = action.payload;
+      })
+      .addCase('auth/logout/fulfilled', (state) => {
+        // Clear external posts on logout
+        state.externalPosts = [];
+        state.externalStatus = 'idle';
+        state.externalError = null;
       });
   }
 });
 
-// Get the pre-built selectors
+export const {
+  clearExternalPosts
+} = postsSlice.actions;
+
 export const {
   selectAll: selectAllPosts,
   selectById: selectPostById,
@@ -235,8 +248,13 @@ export const selectSortedAndFilteredPosts = createSelector(
 
 // Memoized selector for paginated posts
 export const selectPaginatedPosts = createSelector(
-  [selectSortedAndFilteredPosts, (state) => state.preferences.pagination],
-  (posts, pagination) => {
+  [selectSortedAndFilteredPosts, (state) => state.preferences.pagination, (state) => state.preferences.filters],
+  (posts, pagination, filters) => {
+    // If viewing external posts, the data is already paginated by the server
+    if (filters.option === 'external') {
+      return posts;
+    }
+    // For local/all, we need to slice the full dataset
     const { currentPage, itemsPerPage } = pagination;
     const start = (currentPage - 1) * itemsPerPage;
     return posts.slice(start, start + itemsPerPage);

@@ -22,8 +22,7 @@
 * Noticed a preferences sync issue. (Fixed)
 * The app loads all the posts, but it should be optimized to load the posts based on the options.
 * Found optimization and performance issues.
-
-
+* While trying to select a text on a post it select and click the post.
 
 
 

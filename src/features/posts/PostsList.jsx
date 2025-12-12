@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, selectExternalPosts } from './postsSlice';
+import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, clearExternalPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -30,7 +30,7 @@ function PostsList() {
   const currentError = filters.option === 'external' ? externalError : error;
 
   const allPosts = useSelector(selectAllPosts);
-  const externalPosts = useSelector(selectExternalPosts);
+  // externalPosts selector removed as data is accessed via paginatedPosts
   const paginatedPosts = useSelector(selectPaginatedPosts);
 
   const user = useSelector(selectUser);
@@ -76,8 +76,7 @@ function PostsList() {
     }
   }, [dispatch, filters.option]);
 
-  // Memoize external posts length check to avoid dependency issues
-  const externalPostsLength = externalPosts.length;
+
 
   useEffect(() => {
     // Fetch external posts if option is 'all' or 'external'
@@ -86,14 +85,13 @@ function PostsList() {
       const start = (currentPage - 1) * itemsPerPage;
       const limit = itemsPerPage;
 
-      // Check if we have data for this range
-      const hasData = externalPosts.slice(start, start + limit).filter(p => p).length === limit;
-
-      if (!hasData && externalStatus !== 'loading') {
-        dispatch(fetchExternalPosts({ start, limit }));
-      }
+      // Always fetch current page (Replace strategy)
+      dispatch(fetchExternalPosts({ start, limit }));
+    } else {
+      // Clear external posts when switching to other filters
+      dispatch(clearExternalPosts());
     }
-  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage, externalPostsLength, externalStatus]);
+  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage]);
 
   useEffect(() => {
     const toast = location?.state?.toast;
