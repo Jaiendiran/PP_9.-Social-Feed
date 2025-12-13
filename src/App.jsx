@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, fetchUserPreferences, saveUserPreferences, selectIsInitialized } from './features/preferences/preferencesSlice';
-import { selectUser } from './features/auth/authSlice';
+import { selectUser, selectIsSessionExpired, logout } from './features/auth/authSlice';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import UserMenu from './components/UserMenu';
@@ -23,6 +23,7 @@ function App() {
   const user = useSelector(selectUser);
   const preferences = useSelector(state => state.preferences);
   const isInitialized = useSelector(selectIsInitialized);
+  const isSessionExpired = useSelector(selectIsSessionExpired);
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -54,6 +55,18 @@ function App() {
       return () => clearTimeout(timer);
     }
   }, [prefsToSave, user, dispatch, isInitialized]);
+
+  // Handle graceful session expiry: Save preferences then logout
+  useEffect(() => {
+    if (isSessionExpired && user) {
+      console.log('Session expired. Saving preferences before logout...');
+      dispatch(saveUserPreferences({ uid: user.uid, preferences: prefsToSave }))
+        .catch(err => console.error('Failed to save preferences on expiry:', err))
+        .finally(() => {
+          dispatch(logout());
+        });
+    }
+  }, [isSessionExpired, user, dispatch, prefsToSave]);
 
   return (
     <Router>

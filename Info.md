@@ -19,10 +19,11 @@
 
 ###### Bugs:
 
-* Noticed a preferences sync issue. (Fixed)
+* Noticed a preferences sync issue during logoff. (Unknown)
 * The app loads all the posts, but it should be optimized to load the posts based on the options.
-* Found optimization and performance issues.
 * While trying to select a text on a post it select and click the post.
+* Found that all the filter are saving together if any one filter got updated.
+* Need to globalize filters, sort, and search using MockAPI.
 
 
 
@@ -30,13 +31,6 @@
 
 
 
-
-
-For now, the app loads all the post from the firestore. 
-
-
-
-In the app, there are three options which filters the data. The options such as All, Created, and External. If the option switched to 'Created', then the app gets the posts created by the users from the firestore. If the option switched to 'External', then the app fetches data from a pubic API
 
 
 

@@ -1,6 +1,6 @@
 // Constants for cache configuration
 const CACHE_PREFIX = 'blog_';
-const CACHE_EXPIRY = 40 * 60 * 1000; // 40 minutes in milliseconds
+const CACHE_EXPIRY = 20 * 60 * 1000; // 40 minutes in milliseconds
 
 // Cache structure in localStorage
 const cacheStructure = {
@@ -27,7 +27,7 @@ export const cacheUtils = {
   },
 
   // Get data from cache
-  get: (key) => {
+  get: (key, ignoreExpiry = false) => {
     try {
       const cached = localStorage.getItem(key);
       if (!cached) return null;
@@ -35,7 +35,7 @@ export const cacheUtils = {
       const { data, timestamp } = JSON.parse(cached);
       const isExpired = Date.now() - timestamp > CACHE_EXPIRY;
 
-      if (isExpired) {
+      if (isExpired && !ignoreExpiry) {
         localStorage.removeItem(key);
         return null;
       }
@@ -44,6 +44,18 @@ export const cacheUtils = {
     } catch (error) {
       console.error('Cache read error:', error);
       return null;
+    }
+  },
+
+  // Check if key is expired without removing it
+  isExpired: (key) => {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return true; // Treat missing as expired/invalid
+      const { timestamp } = JSON.parse(cached);
+      return Date.now() - timestamp > CACHE_EXPIRY;
+    } catch {
+      return true;
     }
   },
 

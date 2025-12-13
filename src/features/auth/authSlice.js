@@ -2,18 +2,21 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import authService from './authService';
 import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 
-// Get user from cache (localStorage)
+// Get user from cache (localStorage), ignoring expiry to allow graceful logout
 const getCachedUser = () => {
     try {
-        return cacheUtils.get(cacheKeys.USER);
+        return cacheUtils.get(cacheKeys.USER, true);
     } catch (error) {
         console.warn('Failed to get cached user:', error);
         return null;
     }
 };
 
+const isSessionExpired = cacheUtils.isExpired(cacheKeys.USER);
+
 const initialState = {
     user: getCachedUser(),
+    isSessionExpired: isSessionExpired && !!getCachedUser(),
     isError: false,
     isSuccess: false,
     isLoading: false,
@@ -218,5 +221,6 @@ export const selectAuthStatus = state => ({
     isSuccess: state.auth.isSuccess,
     message: state.auth.message,
 });
+export const selectIsSessionExpired = state => state.auth.isSessionExpired;
 
 export default authSlice.reducer;

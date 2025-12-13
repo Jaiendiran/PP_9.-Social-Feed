@@ -13,7 +13,7 @@ const VALID_SORT_ORDERS = ['asc', 'desc'];
 // Get cached preferences for initial state (prevents flash on page refresh)
 const getCachedPreferences = () => {
   try {
-    const cached = cacheUtils.get(cacheKeys.USER_PREFERENCES);
+    const cached = cacheUtils.get(cacheKeys.USER_PREFERENCES, true);
     return cached || null;
   } catch (e) {
     return null;
