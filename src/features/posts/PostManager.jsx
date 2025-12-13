@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPosts, savePost, deletePosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
+import { fetchPosts, savePost, deletePosts, createExternalPost, updateExternalPost, deleteExternalPosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
 import { selectUser } from '../auth/authSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
@@ -111,7 +111,11 @@ function PostManager() {
     };
 
     try {
-      await dispatch(savePost(newPost)).unwrap();
+      if (newPost.isExternal) {
+        await dispatch(updateExternalPost(newPost)).unwrap();
+      } else {
+        await dispatch(savePost(newPost)).unwrap();
+      }
       setIsEditing(false);
 
       if (!postId) {
@@ -147,7 +151,11 @@ function PostManager() {
 
   const handleConfirmDelete = async () => {
     try {
-      await dispatch(deletePosts([postId])).unwrap();
+      if (post?.isExternal) {
+        await dispatch(deleteExternalPosts([postId])).unwrap();
+      } else {
+        await dispatch(deletePosts([postId])).unwrap();
+      }
       navigate('/', {
         state: { toast: { message: 'Post deleted', type: 'success' } },
       });

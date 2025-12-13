@@ -79,25 +79,113 @@ export const deletePosts = createAsyncThunk(
   }
 );
 // Async thunk to fetch external posts
+// Async thunk to fetch external posts from MockAPI
 export const fetchExternalPosts = createAsyncThunk(
   'posts/fetchExternalPosts',
-  async ({ start, limit }, { rejectWithValue }) => {
+  async ({ page, limit, sortBy, sortOrder }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`https://jsonplaceholder.typicode.com/posts?_start=${start}&_limit=${limit}`);
+      const queryParams = new URLSearchParams({
+        page,
+        limit,
+        sortBy: sortBy === 'date' ? 'createdAt' : sortBy, // Map 'date' to 'createdAt' for API
+        order: sortOrder
+      });
+
+      const response = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts?${queryParams}`);
       if (!response.ok) {
         throw new Error('Failed to fetch external posts');
       }
       const data = await response.json();
+
+      // MockAPI returns array directly for this endpoint
       return {
         posts: data.map(post => ({
           ...post,
-          content: post.body,
-          isExternal: true,
-          createdAt: new Date(1672531200000 - post.id * 3600000).toISOString(),
+          id: post.id, // Ensure string/number consistency if needed
+          title: post.title,
+          content: post.content || "No content available", // Fallback for content
+          isExternal: post.isExternal,
+          userId: post.userId || 'external',
+          // Use real createdAt or fallback. MockAPI usually has createdAt.
+          createdAt: post.createdAt || new Date().toISOString(),
+          authorName: post.authorName || 'Public User' // MockAPI might have this
         })),
-        // start matches payload structure, though we don't strictly need it with replace logic
-        start
+        page
       };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Async thunk to create an external post
+export const createExternalPost = createAsyncThunk(
+  'posts/createExternalPost',
+  async (post, { rejectWithValue }) => {
+    try {
+      const response = await fetch('https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: post.title,
+          content: post.content,
+          userId: post.userId,
+          authorName: post.authorName,
+          // MockAPI generates ID and createdAt
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create external post');
+      const data = await response.json();
+      return { ...data, isExternal: true };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Async thunk to update an external post
+export const updateExternalPost = createAsyncThunk(
+  'posts/updateExternalPost',
+  async (post, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${post.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: post.title,
+          content: post.content,
+          // Update other fields if needed
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update external post');
+      const data = await response.json();
+      return { ...data, isExternal: true };
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Async thunk to delete external posts
+export const deleteExternalPosts = createAsyncThunk(
+  'posts/deleteExternalPosts',
+  async (ids, { rejectWithValue }) => {
+    try {
+      await Promise.all(ids.map(id =>
+        fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${id}`, {
+          method: 'DELETE',
+        }).then(res => {
+          if (!res.ok) throw new Error(`Failed to delete post ${id}`);
+          return res.json();
+        })
+      ));
+      return ids;
     } catch (err) {
       return rejectWithValue(err.message);
     }
@@ -165,6 +253,21 @@ const postsSlice = createSlice({
         state.externalStatus = 'failed';
         state.externalError = action.payload;
       })
+      // External CRUD cases
+      .addCase(createExternalPost.fulfilled, (state, action) => {
+        // Optimistically add to top of list if supported, or just let replace strategy handle it on next fetch.
+        // For now, let's prepend to show immediate feedback.
+        state.externalPosts.unshift(action.payload);
+      })
+      .addCase(updateExternalPost.fulfilled, (state, action) => {
+        const index = state.externalPosts.findIndex(p => p.id === action.payload.id);
+        if (index !== -1) {
+          state.externalPosts[index] = { ...state.externalPosts[index], ...action.payload };
+        }
+      })
+      .addCase(deleteExternalPosts.fulfilled, (state, action) => {
+        state.externalPosts = state.externalPosts.filter(p => !action.payload.includes(p.id));
+      })
       .addCase('auth/logout/fulfilled', (state) => {
         // Clear external posts on logout
         state.externalPosts = [];
@@ -174,15 +277,8 @@ const postsSlice = createSlice({
   }
 });
 
-export const {
-  clearExternalPosts
-} = postsSlice.actions;
-
-export const {
-  selectAll: selectAllPosts,
-  selectById: selectPostById,
-  selectIds: selectPostIds
-} = postsAdapter.getSelectors(state => state.posts);
+export const { clearExternalPosts } = postsSlice.actions;
+export const { selectAll: selectAllPosts, selectById: selectPostById, selectIds: selectPostIds } = postsAdapter.getSelectors(state => state.posts);
 
 // Additional selectors for status, error, filters, and pagination
 export const selectPostsStatus = state => state.posts.status;

@@ -9,13 +9,16 @@
 
 
 
+----------------------------------
 
+###### Updates:
+
+* Implemented MockAPI (Done)
+* Implement globalized filteration, sort, and search.
 
 
 
 ----------------------------------
-
-
 
 ###### Bugs:
 
@@ -23,7 +26,6 @@
 * The app loads all the posts, but it should be optimized to load the posts based on the options.
 * While trying to select a text on a post it select and click the post.
 * Found that all the filter are saving together if any one filter got updated.
-* Need to globalize filters, sort, and search using MockAPI.
 
 
 

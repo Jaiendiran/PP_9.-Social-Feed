@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, clearExternalPosts } from './postsSlice';
+import { fetchPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, clearExternalPosts } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -82,16 +82,20 @@ function PostsList() {
     // Fetch external posts if option is 'all' or 'external'
     if (filters.option === 'external' || filters.option === 'all') {
       const { currentPage, itemsPerPage } = pagination;
-      const start = (currentPage - 1) * itemsPerPage;
-      const limit = itemsPerPage;
+      const { sortBy, sortOrder } = filters;
 
       // Always fetch current page (Replace strategy)
-      dispatch(fetchExternalPosts({ start, limit }));
+      dispatch(fetchExternalPosts({
+        page: currentPage,
+        limit: itemsPerPage,
+        sortBy,
+        sortOrder
+      }));
     } else {
       // Clear external posts when switching to other filters
       dispatch(clearExternalPosts());
     }
-  }, [dispatch, filters.option, pagination.currentPage, pagination.itemsPerPage]);
+  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, pagination.currentPage, pagination.itemsPerPage]);
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -186,7 +190,24 @@ function PostsList() {
   const handleConfirmDelete = async () => {
     try {
       const ids = Array.isArray(toDelete) ? toDelete : [toDelete];
-      await dispatch(deletePosts(ids)).unwrap();
+
+      const internalIds = [];
+      const externalIds = [];
+
+      ids.forEach(id => {
+        // Check if id belongs to an internal post
+        if (allPosts.some(p => String(p.id) === String(id))) {
+          internalIds.push(id);
+        } else {
+          externalIds.push(id);
+        }
+      });
+
+      const promises = [];
+      if (internalIds.length > 0) promises.push(dispatch(deletePosts(internalIds)).unwrap());
+      if (externalIds.length > 0) promises.push(dispatch(deleteExternalPosts(externalIds)).unwrap());
+
+      await Promise.all(promises);
 
       const remainingCount = allPosts.length - ids.length;
       const itemsPerPage = pagination.itemsPerPage;
