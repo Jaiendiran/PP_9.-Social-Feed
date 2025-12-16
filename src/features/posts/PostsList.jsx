@@ -203,6 +203,14 @@ function PostsList() {
     setToastOpen(false);
   }, []);
 
+  const handlePostClick = useCallback((postId) => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return;
+    }
+    navigate(`/posts/${postId}?page=${pageParam}`);
+  }, [navigate, pageParam]);
+
   const isFirstLoad = (currentStatus === 'loading' || currentStatus === 'idle') && paginatedPosts.length === 0;
 
   if (currentStatus === 'failed') {
@@ -260,7 +268,7 @@ function PostsList() {
           {!isFirstLoad && paginatedPosts.map(post => {
             const canEditOrDelete = user && (user.role === 'Admin' || post.userId === user.uid);
             return (
-              <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
+              <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(post.id)}

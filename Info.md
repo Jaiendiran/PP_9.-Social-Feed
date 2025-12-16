@@ -26,8 +26,8 @@
 * Noticed a preferences sync issue during logoff. (Not clear)
 * The app loads all the posts, but it should be optimized to load the posts based on the options and pagination. (Solved)
 * For the option 'All', the posts were not loading as expected and throwing error at the page 7. (Solved)
-* While trying to select a text on a post it selects and click the post.
-* Found that all the filter are saving together if any one filter got updated.
+* While trying to select a text on a post it selects and click the post. (Solved)
+* Found that all the filter are saving together if any one filter got updated. (Solved)
 
 
 
