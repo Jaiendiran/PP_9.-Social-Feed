@@ -174,12 +174,11 @@
 
 .sortRow {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: 1.2rem;
+  margin-top: 0;
   font-weight: 500;
   font-size: 1rem;
   color: var(--text-primary);
-  padding-left: 0.5rem;
 }
 
 .sortOption {
@@ -193,10 +192,48 @@
   gap: 0.4rem;
   color: var(--text-primary);
   transition: color 0.2s ease;
+  padding: 0;
 }
 
 .sortOption:hover {
   color: var(--button-primary);
+}
+
+.controlOption {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.controlOption:hover {
+  color: var(--button-primary);
+}
+
+.controlOptionDanger {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  /* Or base danger color? usually text primary then hover danger */
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.controlOptionDanger:hover {
+  color: var(--button-danger);
 }
 
 .sortIcon {

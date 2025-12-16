@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, clearExternalPosts, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal } from './postsSlice';
+import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -257,25 +257,26 @@ function PostsList() {
 
   return (
     <div className={styles.postsList}>
-      <div className={styles.header}>
-        <h2>All Posts</h2>
-      </div>
+
 
       <div className={styles.actions}>
         <div className={styles.rowOneWrapper}>
           <div className={styles.rowOneLeft}>
             <HomeBtn />
-            <NewPostButton />
-            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
-            <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-            {selectedIds.length > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            <h2>All Posts</h2>
           </div>
           <div className={styles.searchBarWrapper}>
             <SearchBar onSearch={handleSearch} initialValue={filters.search} />
           </div>
         </div>
         <div className={styles.rowTwoWrapper}>
-          <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
+          <div className={styles.leftControls}>
+            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
+            <NewPostButton />
+            <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
+            {selectedIds.length > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
+          </div>
           <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
         </div>
       </div>

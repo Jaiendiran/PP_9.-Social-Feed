@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHome, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaHome, FaTimes, FaPlus, FaCheckDouble, FaTimesCircle, FaTrash } from 'react-icons/fa';
 
 
 // Home button component
@@ -31,30 +31,36 @@ export const NewPostButton = React.memo(function NewPostButton() {
   const navigate = useNavigate()
 
   return (
-    <button className={styles.button} onClick={() => navigate('/add')}>
-      + Add Post
+    <button className={styles.controlOption} onClick={() => navigate('/add')}>
+      <FaPlus /> Add
     </button>
   );
 });
 
 // Select all button
-export const SelectAllButton = React.memo(function SelectAllButton({ allSelected, onToggle }) {
+export const SelectAllButton = React.memo(function SelectAllButton({ allSelected, onToggle, disabled }) {
+  if (disabled) return null;
   return (
-    <button className={styles.button} onClick={onToggle}>
-      {allSelected ? 'Deselect All' : 'Select All'}
-    </button>
+    <label className={styles.controlOption} title={allSelected ? 'Deselect All' : 'Select All'}>
+      <input
+        type="checkbox"
+        checked={allSelected}
+        onChange={onToggle}
+        disabled={disabled}
+      />
+    </label>
   );
 });
 
 // Clear selection button
 export const ClearSelectionButton = React.memo(function ClearSelectionButton({ disabled, onClear }) {
+  if (disabled) return null; // Or use stylistic disable
   return (
     <button
-      className={`${styles.button} ${disabled ? styles.disabled : ''}`}
+      className={styles.controlOption}
       onClick={onClear}
-      disabled={disabled}
     >
-      Clear Selection
+      <FaTimesCircle /> Clear
     </button>
   );
 });
@@ -62,8 +68,8 @@ export const ClearSelectionButton = React.memo(function ClearSelectionButton({ d
 // Delete selected button
 export const DeleteSelectedButton = React.memo(function DeleteSelectedButton({ onDelete }) {
   return (
-    <button className={styles.dangerButton} onClick={onDelete}>
-      Delete Selected
+    <button className={styles.controlOptionDanger} onClick={onDelete}>
+      <FaTrash /> Delete
     </button>
   );
 });
