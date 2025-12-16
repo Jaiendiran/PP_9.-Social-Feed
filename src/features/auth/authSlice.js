@@ -21,6 +21,7 @@ const initialState = {
     isSuccess: false,
     isLoading: false,
     message: '',
+    isInitialized: false, // Tracks if Firebase Auth has loaded
 };
 
 // Login user
@@ -126,13 +127,20 @@ export const authSlice = createSlice({
             state.isError = false;
             state.message = '';
         },
+        setAuthInitialized: (state, action) => {
+            state.isInitialized = action.payload;
+        },
         setUser: (state, action) => {
             state.user = action.payload;
             if (action.payload) {
+                state.isSessionExpired = false; // Reset expiry on successful user set
                 cacheUtils.set(cacheKeys.USER, action.payload);
             } else {
                 cacheUtils.clear(cacheKeys.USER);
             }
+        },
+        clearSessionExpiry: (state) => {
+            state.isSessionExpired = false;
         }
     },
     extraReducers: (builder) => {
@@ -144,6 +152,7 @@ export const authSlice = createSlice({
                 state.isLoading = false;
                 state.isSuccess = true;
                 state.user = action.payload;
+                state.isSessionExpired = false;
             })
             .addCase(login.rejected, (state, action) => {
                 state.isLoading = false;
@@ -181,6 +190,7 @@ export const authSlice = createSlice({
             })
             .addCase(logout.fulfilled, (state) => {
                 state.user = null;
+                state.isSessionExpired = false; // Clear expiry flag on explicit logout
             })
             .addCase(fetchCurrentUser.pending, (state) => {
                 state.isLoading = true;
@@ -210,7 +220,7 @@ export const authSlice = createSlice({
     },
 });
 
-export const { reset, setUser } = authSlice.actions;
+export const { reset, setUser, setAuthInitialized, clearSessionExpiry } = authSlice.actions;
 
 // Selectors
 export const selectUser = state => state.auth.user;
@@ -219,8 +229,8 @@ export const selectAuthStatus = state => ({
     isLoading: state.auth.isLoading,
     isError: state.auth.isError,
     isSuccess: state.auth.isSuccess,
-    message: state.auth.message,
 });
 export const selectIsSessionExpired = state => state.auth.isSessionExpired;
+export const selectAuthInitialized = state => state.auth.isInitialized;
 
 export default authSlice.reducer;

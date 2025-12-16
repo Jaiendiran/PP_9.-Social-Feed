@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Blog Landing Page</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#6A5ACD",
+            "background-light": "#F3F4F6",
+            "background-dark": "#1F2937",
+          },
+          fontFamily: {
+            "display": ["Inter", "sans-serif"]
+          },
+          borderRadius: {
+            "DEFAULT": "0.5rem",
+            "lg": "0.75rem",
+            "xl": "1rem",
+            "full": "9999px"
+          },
+        },
+      },
+    }
+  </script>
+<style type="text/tailwindcss">
+    body {
+      background: linear-gradient(120deg, #8A2BE2, #4169E1);
+      background-attachment: fixed;
+    }
+    .main-content-bg {
+       @apply bg-background-light dark:bg-background-dark;
+    }
+    </style>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24
+    }
+  </style>
+</head>
+<body class="font-display text-gray-800 dark:text-gray-200">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1 main-content-bg rounded-xl shadow-lg">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-gray-200 dark:border-gray-700 px-10 py-3">
+<div class="flex items-center gap-4 text-gray-900 dark:text-white">
+<div class="size-6 text-primary">
+<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-gray-900 dark:text-white text-lg font-bold leading-tight tracking-[-0.015em]">Insights</h2>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<div class="hidden md:flex items-center gap-9">
+<a class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium leading-normal" href="#">Technology</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium leading-normal" href="#">Design</a>
+<a class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium leading-normal" href="#">Lifestyle</a>
+</div>
+<div class="flex gap-2">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-semibold leading-normal shadow-sm hover:bg-opacity-90">
+<span class="truncate">Subscribe</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<span class="material-symbols-outlined text-xl">search</span>
+</button>
+</div>
+</div>
+</header>
+<div class="@container pt-5">
+<div class="@[480px]:p-4">
+<div class="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat @[480px]:gap-8 @[480px]:rounded-xl items-start justify-end px-4 pb-10 @[480px]:px-10" data-alt="Abstract gradient background with soft, flowing colors" style='background-image: linear-gradient(rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuDTqzf2pduU7lz9HGa-DAbMJmF5NqIB6QD1VugU5EYJAt3FVntpHuSrcvPfBxdj-yBTp3CpzakepdRHFHzsg9cZ5i_mg16HjoURU8Oop3jh4C5QPpHap8QgKP4kIycSsWhk00nk3nv0z_BLDMQMlnWARNWu6kv51_C-K9Ol33Qaw7mwW2nshuK1Cr-Vz7dyZ3R3avuD8SpBnOXHnigitcLJv7BTC4ZKhVncIgbwl4n0uy_G4JIv34fBzhC2uWQZCXdvzuwg5nGvI_Y");'>
+<div class="flex flex-col gap-2 text-left">
+<h1 class="text-white text-4xl font-extrabold leading-tight tracking-tight @[480px]:text-5xl @[480px]:font-extrabold @[480px]:leading-tight @[480px]:tracking-tight">
+                    Where Curiosity Meets Content
+                  </h1>
+<h2 class="text-gray-200 text-sm font-normal leading-normal @[480px]:text-base @[480px]:font-normal @[480px]:leading-normal">
+                    Explore insightful articles on technology, design, and modern lifestyle.
+                  </h2>
+</div>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 @[480px]:h-12 @[480px]:px-5 bg-primary text-white text-sm font-semibold leading-normal tracking-[0.015em] @[480px]:text-base @[480px]:font-semibold @[480px]:leading-normal @[480px]:tracking-[0.015em] shadow-sm hover:bg-opacity-90">
+<span class="truncate">Read Our Latest Post</span>
+</button>
+</div>
+</div>
+</div>
+<h2 class="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-10">Featured Posts</h2>
+<div class="grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-5 p-4">
+<div class="flex flex-col gap-3 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg" data-alt="A modern, minimalist desk setup with a laptop and a cup of coffee" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDIIqymSdLOazZUZuNRna8NddyLw1GTGHCezy85Lz6Wt2iBQqFmJpCAq298IqFB557WwjzkTKifLvp5oqnGCQgdtWQ6kkJoTfTO0dYCnyeq5OPOucfpQ1CYazxX2lRLX4iZOFLeCuPMfyDasYUJwVZcmg0pf5do5txAW5RJ-kRQBq7yoESy7ENCXYAv3AHhMxyYf9Iob3994FQpXYbpEVWWsCQPRW4E7SP5j-42pjJEXz08YgDE-YuTY76DpIJmR4lBqDMm0pwbcD0");'></div>
+<div>
+<p class="text-primary dark:text-primary/90 text-sm font-semibold">Technology</p>
+<p class="text-gray-800 dark:text-white text-base font-semibold leading-normal">The Future of AI in Creative Industries</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">John Doe - Oct 26, 2023</p>
+</div>
+</div>
+<div class="flex flex-col gap-3 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg" data-alt="Close-up of a designer's hands sketching on a tablet" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBtb4cLm-Kk0_ALT6aF9TiiopZKQHLSIoVETiiB_A08_52YJrdBhBfW_Qaenfk9vat5iMVrGyWCD4euoq-MedpfWu1uJ9oFtm5tm1eJCcBmpyiE_gtY626fguc33ShGTj2DdYhQNjEH89zxm35DXgD0zJ7yXZxzEl-aQvv9O3A89bA2eQ1wBoFOuzRnL_X813OVGQOQ1c6HlAt8223EOXUEW1h3ilYA_hFs0CPle6UaFCgInYOuVmZBLsI2RrkIS1rq2c_Bt3lDGM8");'></div>
+<div>
+<p class="text-primary dark:text-primary/90 text-sm font-semibold">Design</p>
+<p class="text-gray-800 dark:text-white text-base font-semibold leading-normal">10 UI/UX Principles for Better User Experiences</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">Jane Smith - Oct 24, 2023</p>
+</div>
+</div>
+<div class="flex flex-col gap-3 pb-3">
+<div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-lg" data-alt="A person meditating on a yoga mat in a sunlit room" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAqvfMyeSmnd20rRV_2jhG-UfCqd2MxZghtTiMQ36dx6paa32ZOJ85rf3Z72vUlMW89cFHFtMWuVJJ5p18IdY2bZYV1CMloI4_vCIKeyuu3-pGj0fDM-S0omo-z2YCJCqbsGfQGtKpJppyZl1wO4a2hhhYIYvSZiu6VYCfBwCDiXjf1I03E4mNkroT7q5OBzjSPXsrD7saKU_RXpKrjvgHHeAKv36DZMm88SGygv_OUuR3QBLqpX2vd5P2bI-5BCS0wThkss8GRL_k");'></div>
+<div>
+<p class="text-primary dark:text-primary/90 text-sm font-semibold">Lifestyle</p>
+<p class="text-gray-800 dark:text-white text-base font-semibold leading-normal">Finding Balance in a High-Paced World</p>
+<p class="text-gray-500 dark:text-gray-400 text-sm font-normal leading-normal">Emily White - Oct 22, 2023</p>
+</div>
+</div>
+</div>
+<h2 class="text-gray-900 dark:text-white text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-8">Explore Topics</h2>
+<div class="flex gap-3 p-4 flex-wrap">
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 px-4">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal">Technology</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 px-4">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal">Design</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 px-4">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal">Lifestyle</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 px-4">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal">Productivity</p>
+</button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:hover:bg-gray-800 px-4">
+<p class="text-gray-700 dark:text-gray-300 text-sm font-medium leading-normal">Marketing</p>
+</button>
+</div>
+<div class="my-10 p-4">
+<div class="flex flex-col md:flex-row items-center justify-between gap-8 bg-gray-100 dark:bg-gray-900/50 p-8 rounded-xl">
+<div class="flex flex-col gap-2 text-center md:text-left">
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white">Never Miss an Update</h3>
+<p class="text-gray-600 dark:text-gray-400">Get weekly insights and articles delivered right to your inbox.</p>
+</div>
+<form class="flex w-full max-w-md flex-col sm:flex-row gap-3">
+<input class="flex-grow rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:border-primary focus:ring-primary" placeholder="your-email@example.com" type="email"/>
+<button class="flex items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-semibold shadow-sm hover:bg-opacity-90" type="submit">Subscribe</button>
+</form>
+</div>
+</div>
+<footer class="mt-auto border-t border-gray-200 dark:border-gray-700 px-10 py-8">
+<div class="flex flex-col sm:flex-row justify-between items-center gap-6">
+<p class="text-sm text-gray-500 dark:text-gray-400">© 2023 Insights Blog. All rights reserved.</p>
+<div class="flex items-center gap-4">
+<a class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" href="#">About</a>
+<a class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" href="#">Contact</a>
+<a class="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white" href="#">Privacy Policy</a>
+</div>
+<div class="flex gap-4">
+</div>
+</div>
+</footer>
+</div>
+</div>
+</div>
+</div>
+
+</body></html>

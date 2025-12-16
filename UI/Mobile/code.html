@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Blog Landing Page</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#6366F1", // indigo-500
+              "background-light": "#F8FAFC", // slate-50
+              "background-dark": "#1E293B", // slate-800
+            },
+            fontFamily: {
+              display: ["Inter", "sans-serif"],
+            },
+            borderRadius: {
+              DEFAULT: "0.75rem", // rounded-xl
+            },
+          },
+        },
+      };
+    </script>
+<style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      .material-icons {
+        font-size: 24px;
+        vertical-align: middle;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display">
+<div class="max-w-lg mx-auto">
+<header class="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-700 bg-background-light dark:bg-background-dark sticky top-0 z-10">
+<div class="flex items-center space-x-2">
+<div class="w-8 h-8 flex items-center justify-center">
+<svg class="w-7 h-7 text-primary" fill="currentColor" viewBox="0 0 24 24">
+<path d="M4 4h6v16H4V4zm8 0h6v6h-6V4zm0 8h6v8h-6v-8z"></path>
+</svg>
+</div>
+<span class="text-2xl font-bold text-slate-800 dark:text-white">Insights</span>
+</div>
+<div class="flex items-center space-x-2">
+<button class="p-2 rounded-full text-slate-600 dark:text-slate-300">
+<span class="material-icons">search</span>
+</button>
+<button class="p-2 rounded-full text-slate-600 dark:text-slate-300">
+<span class="material-icons">menu</span>
+</button>
+</div>
+</header>
+<main class="p-4 space-y-8">
+<section class="relative rounded-xl overflow-hidden text-white">
+<img alt="People collaborating in a bright room" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDP81UKlJgF1YS20K6iznqYmoeC5cH6yBEQ_BGT_Q28rYiDIN2tcmuR-seiccwchZPsUaItJ5LUcx4jEkzAlv2vOhvtGD_HiHywV5lP5sb2PAJdE7uvCh3wNJT3y9QgY3o_K-p95ny6RNL96vwxOePQNoA6eAA00-tl8fV9XMqlbGB_LDY9TtCiLP11_qILk87SQoa5N1z3OHo2qj7WzJEgOPZ7oRNje7rYq1xdmM_mG3c8u61ZCSKvAmG6ki6Cgp79gHPHDjPgVpA"/>
+<div class="absolute inset-0 bg-black/60"></div>
+<div class="relative p-6 flex flex-col items-start justify-center min-h-[300px]">
+<h1 class="text-4xl font-bold mb-2">Where Curiosity Meets Content</h1>
+<p class="text-slate-200 mb-6">Explore insightful articles on technology, design, and modern lifestyle.</p>
+<button class="bg-primary text-white font-semibold py-3 px-6 rounded-lg">Read Our Latest Post</button>
+</div>
+</section>
+<section>
+<h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-white">Featured Posts</h2>
+<div class="flex space-x-4 overflow-x-auto pb-4 -mx-4 px-4">
+<div class="flex-none w-3/4">
+<div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+<img alt="Laptop on a wooden desk with a coffee cup" class="w-full h-32 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDG7qw_IsvjHrv7SYYgo-j8FxoB35XeIIWLmwLhk6u7IgwtJDNVqw81EGLyldLU8nSjUFy8QCGdX5eeEu7CTX80awq0jRY4BX-8cgCc9793YpH_DFMb2a89YDkCraH2lx_HSeB9SQvdO6hXxOX2G4zSu6B1f7urSXenL2CiKTPQbcByd2baAYXmPykto_1_1EFUgFggsqE_ptPEnBg3g51jE2wAuBEoJWQ1Q9ATqwYbJYaRa7olz5cUlQZ1_UD5DsO2DYKJHmO1jmU"/>
+<div class="p-4">
+<p class="text-primary text-sm font-semibold mb-1">Technology</p>
+<h3 class="font-bold text-slate-800 dark:text-white mb-2 leading-tight">The Future of AI in Creative Industries</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">John Doe - Oct 26, 2023</p>
+</div>
+</div>
+</div>
+<div class="flex-none w-3/4">
+<div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+<img alt="Person drawing a user interface on a tablet with a stylus" class="w-full h-32 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9e4890TvSZrWTV8wq5DVNbdgHbN6KBh34e3fRuLo-CYtiIsQhuUj0a9uDrse1Skvevv2F7tQ9ezAlB1jE_zUfMq_-lznO4FRlZt2WlVAjTlMAdzIX7_NmN1frQRTlp4sZ0Wu0gjMAVMox1U3Yz2KffeViet9CnqL5_Qi7xOa8doViM_ram0xb_T56blKwdw9PSJ33zrQDF254I3z95pvx_8508yr2GBv7IE_fK_IXKPPUxytiBAoNHMfkVb9fReucY67oaFeKNJc"/>
+<div class="p-4">
+<p class="text-primary text-sm font-semibold mb-1">Design</p>
+<h3 class="font-bold text-slate-800 dark:text-white mb-2 leading-tight">10 UI/UX Principles for Better User Experiences</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Jane Smith - Oct 24, 2023</p>
+</div>
+</div>
+</div>
+<div class="flex-none w-3/4">
+<div class="bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-sm">
+<img alt="Woman meditating in a yoga pose indoors" class="w-full h-32 object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWnQYV1uqnObXq0PeJTNdsCmrdSHIuGrCKuxQMed6zuGCr-1ArdeCqisBHrPrPqnjXkPr4q7rw6oTuT8zagCpqHTx1eonjlz5-7Vsv5ljob4D_tCevDZyJOkcXisw_YvZx_F3lj0jcb5zhCfMMnzYwpTjcssgsvFYuVRgtCAyo-XZxCE8KV-L4Y0f7IcxwI3lH6tGAM7pT34ekUuh4iWvN1TKVGAzASmM1k8TC75ZN9fgnGpdeoLh7jknbaUiQDQr52Vwfrn9lUnA"/>
+<div class="p-4">
+<p class="text-primary text-sm font-semibold mb-1">Lifestyle</p>
+<h3 class="font-bold text-slate-800 dark:text-white mb-2 leading-tight">Finding Balance in a High-Paced World</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400">Emily White - Oct 22, 2023</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section>
+<h2 class="text-2xl font-bold mb-4 text-slate-800 dark:text-white">Explore Topics</h2>
+<div class="flex flex-wrap gap-2">
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 px-4 rounded-full text-sm font-medium">Technology</button>
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 px-4 rounded-full text-sm font-medium">Design</button>
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 px-4 rounded-full text-sm font-medium">Lifestyle</button>
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 px-4 rounded-full text-sm font-medium">Productivity</button>
+<button class="bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-2 px-4 rounded-full text-sm font-medium">Marketing</button>
+</div>
+</section>
+<section class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm text-center">
+<h2 class="text-2xl font-bold mb-2 text-slate-800 dark:text-white">Never Miss an Update</h2>
+<p class="text-slate-600 dark:text-slate-400 mb-6">Get weekly insights and articles delivered right to your inbox.</p>
+<form class="space-y-4">
+<input class="w-full rounded-lg border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-white focus:ring-primary focus:border-primary" placeholder="your-email@example.com" type="email"/>
+<button class="w-full bg-primary text-white font-semibold py-3 px-6 rounded-lg" type="submit">Subscribe</button>
+</form>
+</section>
+</main>
+<footer class="p-6 border-t border-slate-200 dark:border-slate-700">
+<div class="flex justify-center space-x-6 text-sm text-slate-600 dark:text-slate-400 mb-4">
+<a class="hover:text-primary" href="#">About</a>
+<a class="hover:text-primary" href="#">Contact</a>
+<a class="hover:text-primary" href="#">Privacy Policy</a>
+</div>
+<p class="text-center text-xs text-slate-500 dark:text-slate-400">© 2023 Insights Blog. All rights reserved.</p>
+</footer>
+</div>
+
+</body></html>

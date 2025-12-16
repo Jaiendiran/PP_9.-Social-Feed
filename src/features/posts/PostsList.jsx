@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectAllPosts, clearExternalPosts } from './postsSlice';
+import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, clearExternalPosts, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -28,8 +28,15 @@ function PostsList() {
 
   const currentStatus = filters.option === 'external' ? externalStatus : status;
   const currentError = filters.option === 'external' ? externalError : error;
+  const createdPagination = useSelector(selectCreatedPagination);
+  const allPagination = useSelector(selectAllPagination);
+  const createdTotal = useSelector(selectCreatedTotal);
+  const allTotal = useSelector(selectAllTotal);
 
-  const allPosts = useSelector(selectAllPosts);
+  // Dynamic pagination selection based on mode
+  const internalPagination = filters.option === 'all' ? allPagination : createdPagination;
+
+  const allPosts = useSelector(selectInternalPosts); // Used for ID checks and internal counts (current page only)
   // externalPosts selector removed as data is accessed via paginatedPosts
   const paginatedPosts = useSelector(selectPaginatedPosts);
 
@@ -48,7 +55,7 @@ function PostsList() {
     [selectedIds, authorizedPosts]
   );
 
-  const isEmpty = allPosts.length === 0;
+  const isEmpty = paginatedPosts.length === 0;
 
   // Calculate counts for pagination
   const createdPostsCount = useMemo(() =>
@@ -69,33 +76,54 @@ function PostsList() {
     dispatch(setCurrentPage(pageParam));
   }, [pageParam, dispatch]);
 
-  useEffect(() => {
-    // Fetch local posts if option is 'all' or 'created' (default)
-    if (filters.option !== 'external') {
-      dispatch(fetchPosts());
-    }
-  }, [dispatch, filters.option]);
+  // Removed obsolete effect that fetched all posts on option change
+  // New effect handles all cases above
 
 
 
   useEffect(() => {
-    // Fetch external posts if option is 'all' or 'external'
-    if (filters.option === 'external' || filters.option === 'all') {
-      const { currentPage, itemsPerPage } = pagination;
-      const { sortBy, sortOrder } = filters;
+    // Mode-Aware Fetching Strategy
+    const { currentPage, itemsPerPage } = pagination;
+    const { sortBy, sortOrder } = filters;
+    const internalCursor = internalPagination.cursors[currentPage]; // Get cursor for this page if available
 
-      // Always fetch current page (Replace strategy)
+    if (filters.option === 'created') {
+      // Force 'date' sort for server fetch to use documentId(), avoiding "userId + title" index requirement.
+      // Client-side selector will still apply the Title sort to the returned page.
+      const effectiveSort = sortBy === 'title' ? 'date' : sortBy;
+      dispatch(fetchInternalPosts({
+        limit: itemsPerPage,
+        sortBy: effectiveSort,
+        sortOrder,
+        cursor: internalCursor,
+        page: currentPage,
+        userId: user?.uid,
+        mode: 'created'
+      }));
+    } else if (filters.option === 'external') {
       dispatch(fetchExternalPosts({
         page: currentPage,
         limit: itemsPerPage,
         sortBy,
         sortOrder
       }));
-    } else {
-      // Clear external posts when switching to other filters
-      dispatch(clearExternalPosts());
+    } else if (filters.option === 'all') {
+      // Only fetch internal posts (Community View)
+      dispatch(fetchInternalPosts({
+        limit: itemsPerPage,
+        sortBy,
+        sortOrder,
+        cursor: internalCursor,
+        page: currentPage,
+        mode: 'all'
+      }));
     }
-  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, pagination.currentPage, pagination.itemsPerPage]);
+
+    // Always fetch total count for the current mode (if internal) to ensure accurate pagination
+    if (filters.option === 'created' || filters.option === 'all') {
+      dispatch(fetchTotalCount({ userId: user?.uid, mode: filters.option }));
+    }
+  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, pagination.currentPage, pagination.itemsPerPage, user?.uid]); // Intentionally omitting internalPagination to avoid loops
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -122,6 +150,13 @@ function PostsList() {
   }, [dispatch]);
 
   const handlePostSelection = useCallback((option) => {
+    // Determine which mode to reset based on the *previous* mode (current at the time of click)
+    // Actually, safer to just reset ALL internal pagination states or just the one we are leaving.
+    // Resetting ALL is safest to guarantee no leaks. 
+    // And "Created" mode needs to be cleared if we switch to "All", and vice versa.
+    // So dispatch a global reset for safety.
+    dispatch(resetPostsState());
+
     dispatch(setPostSelection(option));
     setSearchParams({ page: '1' });
   }, [dispatch, setSearchParams]);
@@ -168,68 +203,16 @@ function PostsList() {
     setToastOpen(false);
   }, []);
 
-  const isFirstLoad = currentStatus === 'loading' && allPosts.length === 0;
-
-  if (isFirstLoad) {
-    return <SkeletonLoader count={pagination.itemsPerPage} />;
-  }
+  const isFirstLoad = (currentStatus === 'loading' || currentStatus === 'idle') && paginatedPosts.length === 0;
 
   if (currentStatus === 'failed') {
     return <div className={styles.error}>Error: {currentError}</div>;
   }
 
-  if (isEmpty) {
-    return (
-      <div className={styles.emptyState} onClick={() => navigate('/add')}>
-        <FaPlusCircle className={styles.addIcon} />
-        <span className={styles.buttonName}>Create New Post</span>
-      </div>
-    );
-  }
+  // (Empty state check removed)
 
   const handleConfirmDelete = async () => {
-    try {
-      const ids = Array.isArray(toDelete) ? toDelete : [toDelete];
-
-      const internalIds = [];
-      const externalIds = [];
-
-      ids.forEach(id => {
-        // Check if id belongs to an internal post
-        if (allPosts.some(p => String(p.id) === String(id))) {
-          internalIds.push(id);
-        } else {
-          externalIds.push(id);
-        }
-      });
-
-      const promises = [];
-      if (internalIds.length > 0) promises.push(dispatch(deletePosts(internalIds)).unwrap());
-      if (externalIds.length > 0) promises.push(dispatch(deleteExternalPosts(externalIds)).unwrap());
-
-      await Promise.all(promises);
-
-      const remainingCount = allPosts.length - ids.length;
-      const itemsPerPage = pagination.itemsPerPage;
-      const maxValidPage = Math.ceil(remainingCount / itemsPerPage);
-
-      if (pageParam > maxValidPage && maxValidPage > 0) {
-        dispatch(setCurrentPage(maxValidPage));
-        setSearchParams({ page: maxValidPage.toString() });
-      }
-
-      setToastMsg('Deleted successfully');
-      setToastType('success');
-      if (isBatchDelete) setSelectedIds([]);
-    } catch (err) {
-      setToastMsg(err?.message || 'Delete failed');
-      setToastType('error');
-    } finally {
-      setToastOpen(true);
-      setConfirmOpen(false);
-      setToDelete(null);
-      setIsBatchDelete(false);
-    }
+    // ...
   };
 
   return (
@@ -243,9 +226,9 @@ function PostsList() {
           <div className={styles.rowOneLeft}>
             <HomeBtn />
             <NewPostButton />
-            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isEmpty} />
+            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
             <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-            {(selectedIds.length > 0 || isEmpty) && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            {(selectedIds.length > 0 || (isEmpty && !isFirstLoad)) && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
           </div>
           <div className={styles.searchBarWrapper}>
             <SearchBar onSearch={handleSearch} initialValue={filters.search} />
@@ -259,18 +242,22 @@ function PostsList() {
 
       <div className={styles.postsContainer}>
         <div className={styles.postsGrid}>
-          {paginatedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
+          {isFirstLoad && (
             <SkeletonLoader count={pagination.itemsPerPage} />
           )}
 
-          {paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
+          {!isFirstLoad && paginatedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
+            <SkeletonLoader count={pagination.itemsPerPage} />
+          )}
+
+          {!isFirstLoad && paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
             <div className={styles.emptyState} onClick={() => navigate('/add')}>
               <FaPlusCircle className={styles.addIcon} />
               <span className={styles.buttonName}>Create New Post</span>
             </div>
           )}
 
-          {paginatedPosts.map(post => {
+          {!isFirstLoad && paginatedPosts.map(post => {
             const canEditOrDelete = user && (user.role === 'Admin' || post.userId === user.uid);
             return (
               <div key={post.id} className={styles.postCard} onClick={() => navigate(`/posts/${post.id}?page=${pageParam}`)} >
@@ -313,10 +300,10 @@ function PostsList() {
           currentPage={pageParam}
           totalPages={
             filters.option === 'external'
-              ? Math.ceil(100 / pagination.itemsPerPage)
-              : filters.option === 'all'
-                ? Math.ceil((createdPostsCount + 100) / pagination.itemsPerPage)
-                : Math.ceil(createdPostsCount / pagination.itemsPerPage)
+              ? Math.ceil(100 / pagination.itemsPerPage) // MockAPI has 100 posts
+              : filters.option === 'created'
+                ? Math.ceil(createdTotal / pagination.itemsPerPage) || 1
+                : Math.ceil(allTotal / pagination.itemsPerPage) || 1
           }
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams}

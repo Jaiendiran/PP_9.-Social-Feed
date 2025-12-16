@@ -2,12 +2,15 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, fetchUserPreferences, saveUserPreferences, selectIsInitialized } from './features/preferences/preferencesSlice';
-import { selectUser, selectIsSessionExpired, logout } from './features/auth/authSlice';
+import { selectUser, selectIsSessionExpired, logout, setUser, setAuthInitialized, selectAuthInitialized, clearSessionExpiry } from './features/auth/authSlice';
+import { useIdleTimer } from './utils/useIdleTimer';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import UserMenu from './components/UserMenu';
 import AuthGuard from './features/auth/guards/AuthGuard';
 import './styles/theme.css';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase.config';
 import styles from './App.module.css';
 
 // Lazy load components
@@ -24,13 +27,64 @@ function App() {
   const preferences = useSelector(state => state.preferences);
   const isInitialized = useSelector(selectIsInitialized);
   const isSessionExpired = useSelector(selectIsSessionExpired);
+  const isAuthInitialized = useSelector(selectAuthInitialized); // Check if auth is ready
   const dispatch = useDispatch();
+
+  // Initialize Inactivity Timer
+  // Using default from hook (10s for testing as requested, usually 20 mins)
+  useIdleTimer();
 
   useEffect(() => {
     document.body.setAttribute('data-theme', currentTheme);
   }, [currentTheme]);
 
-  // Fetch preferences on login
+  // Passive Auth Listener to synchronize Redux with Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      // Only update if there's a mismatch or on init
+      // We rely on authSlice logic: 
+      // If firebaseUser matches request, user is logged in.
+      // If null, user is logged out.
+
+      // We pass serialized user to Redux
+      // Note: authService.getUserDocument handles full data fetch.
+      // Here we just ensure basic sync or trigger fetch.
+      // If we rely on Login component to set user, this might overwrite?
+      // Actually, Login component calls thunk which sets user.
+      // onAuthStateChanged fires on login too.
+      // To avoid race, we can use this ONLY for initialization or re-auth persistence.
+      // But requirement says "Make Auth Listener Passive".
+      // It should setAuthInitialized(true) primarily.
+
+      // Let's just mark initialized here.
+      // If user is already set by Login thunk, good.
+      // If reload, this will fire.
+
+      dispatch(setAuthInitialized(true));
+
+      if (firebaseUser) {
+        // Firebase says we are logged in.
+        // Clear any stale session expiry flag from local state.
+        dispatch(clearSessionExpiry());
+      }
+
+      // If we have a user in Redux but Firebase says no user -> Logout
+      // If we have no user in Redux but Firebase has user -> We could restore, 
+      // but Redux persistence (cacheUtils) handles that.
+      // Typically we trust cacheUtils for initial state.
+
+      // Strict Sync:
+      if (!firebaseUser && user) {
+        // Firebase thinks we are logged out, but Redux thinks logged in
+        // This happens if token revoked or explicit signout elsewhere
+        // dispatch(logout()); // BE CAREFUL: endless loops?
+      }
+    });
+
+    return () => unsubscribe();
+  }, [dispatch, user]);
+
+  // Fetch preferences on login (moved down to ensure user exists)
   useEffect(() => {
     if (user && user.uid) {
       dispatch(fetchUserPreferences(user.uid));
@@ -58,7 +112,9 @@ function App() {
 
   // Handle graceful session expiry: Save preferences then logout
   useEffect(() => {
-    if (isSessionExpired && user) {
+    // Only run this check if Auth is fully initialized
+    // This prevents premature logout during the split-second before login completes
+    if (isAuthInitialized && isSessionExpired && user) {
       console.log('Session expired. Saving preferences before logout...');
       dispatch(saveUserPreferences({ uid: user.uid, preferences: prefsToSave }))
         .catch(err => console.error('Failed to save preferences on expiry:', err))
@@ -66,7 +122,11 @@ function App() {
           dispatch(logout());
         });
     }
-  }, [isSessionExpired, user, dispatch, prefsToSave]);
+  }, [isSessionExpired, user, dispatch, prefsToSave, isAuthInitialized]);
+
+  if (!isAuthInitialized) {
+    return <LoadingSpinner size="large" />;
+  }
 
   return (
     <Router>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPosts, savePost, deletePosts, createExternalPost, updateExternalPost, deleteExternalPosts, selectPostByIdCombined, selectPostsStatus, selectPostsError } from './postsSlice';
+import { savePost, deletePosts, createExternalPost, updateExternalPost, deleteExternalPosts, selectPostByIdCombined, selectPostsStatus, selectPostsError, fetchPostById } from './postsSlice';
 import { selectUser } from '../auth/authSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
@@ -34,17 +34,21 @@ function PostManager() {
 
 
   useEffect(() => {
+    if (postId && !post) {
+      dispatch(fetchPostById(postId));
+    }
+  }, [postId, post, dispatch]);
+
+  useEffect(() => {
     if (postId && post) {
       setTitle(post.title);
       setContent(post.content);
     }
   }, [postId, post]);
 
-  useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchPosts());
-    }
-  }, [status, dispatch]);
+  // Removed obsolete fetchPosts effect. 
+  // Deep linking requires a dedicated fetchPostById thunk which is outside Phase 2 scope.
+  // Currently relies on list being loaded or aggressive caching.
 
   // All useCallback hooks MUST be defined before any early returns (React rules of hooks)
   const handleSetTitle = useCallback((value) => {
@@ -63,7 +67,8 @@ function PostManager() {
   }, []);
 
   // Early returns AFTER all hooks are defined
-  if (status === 'loading' || status === 'idle') {
+  // Only block if loading a specific post
+  if (postId && status === 'loading') {
     return <LoadingSpinner />;
   }
 
