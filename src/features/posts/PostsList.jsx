@@ -83,8 +83,9 @@ function PostsList() {
 
   useEffect(() => {
     // Mode-Aware Fetching Strategy
+    // Mode-Aware Fetching Strategy
     const { currentPage, itemsPerPage } = pagination;
-    const { sortBy, sortOrder } = filters;
+    const { sortBy, sortOrder, search } = filters;
     const internalCursor = internalPagination.cursors[currentPage]; // Get cursor for this page if available
 
     if (filters.option === 'created') {
@@ -98,14 +99,19 @@ function PostsList() {
         cursor: internalCursor,
         page: currentPage,
         userId: user?.uid,
-        mode: 'created'
+        mode: 'created',
+        search
       }));
     } else if (filters.option === 'external') {
       dispatch(fetchExternalPosts({
         page: currentPage,
         limit: itemsPerPage,
         sortBy,
-        sortOrder
+        page: currentPage,
+        limit: itemsPerPage,
+        sortBy,
+        sortOrder,
+        search
       }));
     } else if (filters.option === 'all') {
       // Only fetch internal posts (Community View)
@@ -115,15 +121,18 @@ function PostsList() {
         sortOrder,
         cursor: internalCursor,
         page: currentPage,
-        mode: 'all'
+        cursor: internalCursor,
+        page: currentPage,
+        mode: 'all',
+        search
       }));
     }
 
     // Always fetch total count for the current mode (if internal) to ensure accurate pagination
     if (filters.option === 'created' || filters.option === 'all') {
-      dispatch(fetchTotalCount({ userId: user?.uid, mode: filters.option }));
+      dispatch(fetchTotalCount({ userId: user?.uid, mode: filters.option, search }));
     }
-  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, pagination.currentPage, pagination.itemsPerPage, user?.uid]); // Intentionally omitting internalPagination to avoid loops
+  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, filters.search, pagination.currentPage, pagination.itemsPerPage, user?.uid]); // Intentionally omitting internalPagination to avoid loops
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -220,7 +229,30 @@ function PostsList() {
   // (Empty state check removed)
 
   const handleConfirmDelete = async () => {
-    // ...
+    try {
+      const idsToDelete = isBatchDelete ? toDelete : [toDelete];
+
+      if (filters.option === 'external') {
+        await dispatch(deleteExternalPosts(idsToDelete)).unwrap();
+      } else {
+        await dispatch(deletePosts(idsToDelete)).unwrap();
+      }
+
+      setToastMsg('Post(s) deleted successfully');
+      setToastType('success');
+      setToastOpen(true);
+
+      if (isBatchDelete) {
+        setSelectedIds([]);
+        setToDelete(null);
+      }
+    } catch (err) {
+      setToastMsg(err.message || 'Delete failed');
+      setToastType('error');
+      setToastOpen(true);
+    } finally {
+      setConfirmOpen(false);
+    }
   };
 
   return (
@@ -236,7 +268,7 @@ function PostsList() {
             <NewPostButton />
             <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
             <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-            {(selectedIds.length > 0 || (isEmpty && !isFirstLoad)) && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            {selectedIds.length > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
           </div>
           <div className={styles.searchBarWrapper}>
             <SearchBar onSearch={handleSearch} initialValue={filters.search} />

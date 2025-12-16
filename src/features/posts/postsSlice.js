@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, createEntityAdapter, createSelector } from '@reduxjs/toolkit';
 import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 import { db } from '../../firebase.config';
-import { collection, getDocs, setDoc, deleteDoc, doc, getDoc, query, orderBy, limit, startAfter, where, documentId, getCountFromServer } from 'firebase/firestore';
+import { collection, getDocs, setDoc, deleteDoc, doc, getDoc, query, orderBy, limit, startAfter, where, documentId, getCountFromServer, startAt, endAt } from 'firebase/firestore';
 
 
 
@@ -9,38 +9,36 @@ import { collection, getDocs, setDoc, deleteDoc, doc, getDoc, query, orderBy, li
 // Async thunk to fetch posts from Firestore (Internal)
 export const fetchInternalPosts = createAsyncThunk(
   'posts/fetchInternalPosts',
-  async ({ limit: limitVal, sortBy, sortOrder, cursor, page, userId, mode }, { rejectWithValue }) => {
+  async ({ limit: limitVal, sortBy, sortOrder, cursor, page, userId, mode, search }, { rejectWithValue }) => {
     try {
       const postsRef = collection(db, 'posts');
       let q = query(postsRef);
 
-      // Apply User Filter (Server-Side) if provided (for 'created' mode)
-      if (userId) {
-        q = query(q, where('userId', '==', userId));
+      // Search (Prefix) Logic
+      // If searching, we MUST sort by title for the prefix range to work.
+      if (search && search.trim().length > 0) {
+        const searchTerm = search.trim(); // Case sensitive unless we store lowercase
+        // We will assume standard case-sensitive title search for now as Firestore lacks loose mode natively
+        q = query(q, orderBy('title', 'asc'), startAt(searchTerm), endAt(searchTerm + '\uf8ff'));
+
+        // If sorting by something else was requested, we ignore it for search results 
+        // because we can't sort by Date AND filter by Title range efficiently without composite index.
+        // Also, we can't easily filter by User + Title Range without specific index.
+      } else {
+        // Standard Sort
+        // Apply User Filter (Server-Side) if provided (for 'created' mode)
+        if (userId) {
+          q = query(q, where('userId', '==', userId));
+        }
+
+        const useIdSort = sortBy === 'date' && !!userId; // Only use ID sort when dodging composite index
+        const sortField = sortBy === 'title' ? 'title' : (useIdSort ? documentId() : 'createdAt');
+        q = query(q, checkBoxOrderBy(sortField, sortOrder));
       }
-
-      // Note: Firestore requires an index for some sorts.
-      // Default natural order is by ID, but we usually want createdAt.
-      // Since IDs are timestamp-based (Date.now()), sorting by documentId() is equivalent to createdAt 
-      // AND allows us to avoid composite index requirements with 'where' clauses (Created mode).
-      // However, for 'All' mode (no userId), we don't have a where clause, so sorting by documentId alone is fine?
-      // Wait, 'All' mode failed with "The query requires an index". 
-      // This implies 'All' mode (collection scan + sort) failed? 
-      // Default collection scan + sort usually works if it's the only constraint.
-      // But maybe 'createdAt' is better for 'All' mode?
-      // Let's fallback to 'createdAt' if useIdSort is true BUT no userId is present?
-      // Actually, if userId IS present, used documentId. If NOT present, use createdAt (standard single field index).
-
-      const useIdSort = sortBy === 'date' && !!userId; // Only use ID sort when dodging composite index
-      const sortField = sortBy === 'title' ? 'title' : (useIdSort ? documentId() : 'createdAt');
-
-      q = query(q, checkBoxOrderBy(sortField, sortOrder));
 
       // Apply pagination
       if (cursor) {
         // Firestore startAfter requires the exact value types.
-        // If the cursor is an object (from state), use it.
-        // Assuming cursor is the value (string/number).
         q = query(q, startAfter(cursor));
       }
 
@@ -53,7 +51,10 @@ export const fetchInternalPosts = createAsyncThunk(
       querySnapshot.forEach((doc) => {
         posts.push({ id: doc.id, ...doc.data() });
         // Capture the value used for sorting to use as next cursor
-        const valContext = useIdSort ? doc.id : doc.data()[sortBy === 'date' ? 'createdAt' : sortBy];
+        // If searching, we sorted by title.
+        const effectiveSortBy = (search && search.trim().length > 0) ? 'title' : sortBy;
+        const useIdSortWithSearch = effectiveSortBy === 'date' && !!userId && !search;
+        const valContext = useIdSortWithSearch ? doc.id : doc.data()[effectiveSortBy === 'date' ? 'createdAt' : effectiveSortBy];
         lastVisible = valContext;
       });
 
@@ -75,15 +76,19 @@ export const fetchInternalPosts = createAsyncThunk(
 // Async thunk to fetch total count of posts from Firestore
 export const fetchTotalCount = createAsyncThunk(
   'posts/fetchTotalCount',
-  async ({ userId, mode }, { rejectWithValue }) => {
+  async ({ userId, mode, search }, { rejectWithValue }) => {
     try {
       const postsRef = collection(db, 'posts');
       let q = query(postsRef);
 
-      if (mode === 'created' && userId) {
-        q = query(q, where('userId', '==', userId));
+      if (search && search.trim().length > 0) {
+        const searchTerm = search.trim();
+        q = query(q, orderBy('title'), startAt(searchTerm), endAt(searchTerm + '\uf8ff'));
+      } else {
+        if (mode === 'created' && userId) {
+          q = query(q, where('userId', '==', userId));
+        }
       }
-      // 'all' mode just counts naturally (filtered by nothing)
 
       const snapshot = await getCountFromServer(q);
       return { count: snapshot.data().count, mode };
@@ -178,7 +183,7 @@ export const deletePosts = createAsyncThunk(
 // Async thunk to fetch external posts from MockAPI
 export const fetchExternalPosts = createAsyncThunk(
   'posts/fetchExternalPosts',
-  async ({ page, limit, sortBy, sortOrder }, { rejectWithValue }) => {
+  async ({ page, limit, sortBy, sortOrder, search }, { rejectWithValue }) => {
     try {
       const queryParams = new URLSearchParams({
         page,
@@ -187,8 +192,24 @@ export const fetchExternalPosts = createAsyncThunk(
         order: sortOrder
       });
 
+      if (search) {
+        queryParams.append('title', search); // MockAPI supports 'title' filter or 'search' (q).
+        // MockAPI usually supports 'q' for global or 'field=value'. 'title=value' is exact match?
+        // MockAPI text search: ?search=text. Or ?title=text (for exact).
+        // Let's try 'search' param first, as it's often loose.
+        // Actually typically ?search= is global.
+        queryParams.append('search', search);
+      }
+
       const response = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts?${queryParams}`);
       if (!response.ok) {
+        if (response.status === 404) {
+          // MockAPI returns 404 if no results found for filter. Treat as empty list.
+          return {
+            posts: [],
+            page
+          };
+        }
         throw new Error('Failed to fetch external posts');
       }
       const data = await response.json();
@@ -426,6 +447,8 @@ const postsSlice = createSlice({
       // Delete posts cases
       .addCase(deletePosts.fulfilled, (state, action) => {
         postsAdapter.removeMany(state, action.payload);
+        // Also remove from internalPosts array to keep in sync
+        state.internalPosts = state.internalPosts.filter(p => !action.payload.includes(p.id));
       })
       // Fetch external posts cases
       .addCase(fetchExternalPosts.pending, (state) => {
@@ -488,43 +511,22 @@ export const selectIsExternalCached = state => state.posts.isExternalCached;
 export const selectSortedAndFilteredPosts = createSelector(
   [selectAllPosts, (state) => state.preferences.filters, (state) => state.auth.user, (state) => state.posts.externalPosts],
   (posts, filters, user, externalPosts) => {
-    let filteredPosts = posts;
+    // Return posts based on mode directly, without client-side filtering.
+    // The server (thunk) has already handled search, sort(mostly), and user filtering.
 
-    if (filters.option === 'created') {
-      // Show only posts authored by the authenticated user
-      if (user) {
-        filteredPosts = filteredPosts.filter(post => post.userId === user.uid);
-      } else {
-        filteredPosts = [];
-      }
-    } else if (filters.option === 'external') {
-      // Show external posts, but prefer local version if edited
-      filteredPosts = externalPosts
-        .filter(p => p) // Filter out empty slots
-    } else if (filters.option === 'all') {
-      // Community View: Show ALL internal posts
-      // Do NOT include external posts per new requirements
-      filteredPosts = posts || [];
+    if (filters.option === 'external') {
+      return externalPosts;
     }
 
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      filteredPosts = filteredPosts.filter(post =>
-        post.title.toLowerCase().includes(searchLower) ||
-        post.content.toLowerCase().includes(searchLower)
-      );
-    }
+    // For 'created' or 'all', we return the internal posts.
+    // Note: If using internalPosts array directly is safer than selectAllPosts (which might have leftover adapter data),
+    // we should prefer that. But adapter is synced in reducer.
+    // However, adapter might contain posts that didn't match the *current* query 
+    // if we haven't rigorously cleared it. 
+    // We do resetPostsState on mode switch.
+    // But pagination appends? No, we replace adapter on fetch success.
 
-    return [...filteredPosts].sort((a, b) => {
-      if (filters.sortBy === 'title') {
-        return filters.sortOrder === 'asc'
-          ? a.title.localeCompare(b.title)
-          : b.title.localeCompare(a.title);
-      }
-      return filters.sortOrder === 'asc'
-        ? new Date(a.createdAt) - new Date(b.createdAt)
-        : new Date(b.createdAt) - new Date(a.createdAt);
-    });
+    return posts || [];
   }
 );
 

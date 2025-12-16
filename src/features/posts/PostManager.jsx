@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { savePost, deletePosts, createExternalPost, updateExternalPost, deleteExternalPosts, selectPostByIdCombined, selectPostsStatus, selectPostsError, fetchPostById } from './postsSlice';
+import { selectFilters } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
@@ -21,12 +22,14 @@ function PostManager() {
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
   const user = useSelector(selectUser);
+  const filters = useSelector(selectFilters);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(!postId);
   const [errors, setErrors] = useState({});
 
+  const [isDeleting, setIsDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -34,10 +37,10 @@ function PostManager() {
 
 
   useEffect(() => {
-    if (postId && !post) {
+    if (postId && !post && !isDeleting) {
       dispatch(fetchPostById(postId));
     }
-  }, [postId, post, dispatch]);
+  }, [postId, post, dispatch, isDeleting]);
 
   useEffect(() => {
     if (postId && post) {
@@ -119,7 +122,12 @@ function PostManager() {
       if (newPost.isExternal) {
         await dispatch(updateExternalPost(newPost)).unwrap();
       } else {
-        await dispatch(savePost(newPost)).unwrap();
+        // Create New
+        if (filters.option === 'external') {
+          await dispatch(createExternalPost(newPost)).unwrap();
+        } else {
+          await dispatch(savePost(newPost)).unwrap();
+        }
       }
       setIsEditing(false);
 
@@ -137,6 +145,7 @@ function PostManager() {
       setToastMsg(err?.message || 'Save failed');
       setToastType('error');
       setToastOpen(true);
+      setIsEditing(true); // Keep editing if save failed
     }
   };
 
@@ -155,6 +164,7 @@ function PostManager() {
 
 
   const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
       if (post?.isExternal) {
         await dispatch(deleteExternalPosts([postId])).unwrap();
@@ -168,6 +178,7 @@ function PostManager() {
       setToastMsg(err?.message || 'Delete failed');
       setToastType('error');
       setToastOpen(true);
+      setIsDeleting(false); // Reset so user can try again or see error
     } finally {
       setConfirmOpen(false);
     }
