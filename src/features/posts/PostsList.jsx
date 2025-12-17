@@ -198,11 +198,11 @@ function PostsList() {
     dispatch(setItemsPerPage(value));
   }, [dispatch]);
 
-  const handleOpenDeleteConfirm = useCallback((postId) => {
-    setToDelete(postId);
-    setIsBatchDelete(false);
-    setConfirmOpen(true);
-  }, []);
+  // const handleOpenDeleteConfirm = useCallback((postId) => {
+  //   setToDelete(postId);
+  //   setIsBatchDelete(false);
+  //   setConfirmOpen(true);
+  // }, []);
 
   const handleCloseConfirm = useCallback(() => {
     setConfirmOpen(false);
@@ -313,11 +313,13 @@ function PostsList() {
                 <div className={styles.postContent}>
                   <h3>{post.title}</h3>
                   <p className={styles.postMsg}>{post.content}</p>
-                  <p className={styles.postAuthor}>
-                    <strong>Author: </strong>
-                    {post.isExternal ? 'Public' : (post.authorName || 'Unknown User')}
-                  </p>
-                  <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
+                  <div className={styles.postMeta}>
+                    <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
+                    <p className={styles.postAuthor}>
+                      <strong>Author: </strong>
+                      {post.isExternal ? 'Public' : (post.authorName || 'Unknown User')}
+                    </p>
+                    </div>
                 </div>
                 {canEditOrDelete && (
                   <FaTrash
