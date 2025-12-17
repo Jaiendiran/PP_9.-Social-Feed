@@ -44,19 +44,62 @@ export const fetchInternalPosts = createAsyncThunk(
 
       q = query(q, limit(limitVal));
 
-      const querySnapshot = await getDocs(q);
-      const posts = [];
+      let querySnapshot;
+      let posts = [];
       let lastVisible = null;
 
-      querySnapshot.forEach((doc) => {
-        posts.push({ id: doc.id, ...doc.data() });
-        // Capture the value used for sorting to use as next cursor
-        // If searching, we sorted by title.
-        const effectiveSortBy = (search && search.trim().length > 0) ? 'title' : sortBy;
-        const useIdSortWithSearch = effectiveSortBy === 'date' && !!userId && !search;
-        const valContext = useIdSortWithSearch ? doc.id : doc.data()[effectiveSortBy === 'date' ? 'createdAt' : effectiveSortBy];
-        lastVisible = valContext;
-      });
+      try {
+        querySnapshot = await getDocs(q);
+      } catch (err) {
+        // Firestore may require a composite index when combining where(userId==) and orderBy(title).
+        // If that happens and the requested sort is by title, fallback to fetching the page ordered
+        // by `createdAt` (which does not require the composite index) and then sort the returned
+        // page by title on the client. This preserves UX without forcing an index change.
+        const looksLikeIndexError = /index/i.test(err.message || '');
+        if (looksLikeIndexError && sortBy === 'title' && userId) {
+          // Build fallback query: filter by userId (if present), order by createdAt, same cursor/limit
+          let fallbackQ = query(postsRef);
+          if (userId) fallbackQ = query(fallbackQ, where('userId', '==', userId));
+          // Use createdAt ordering to avoid composite index requirement
+          fallbackQ = query(fallbackQ, orderBy('createdAt', sortOrder));
+          if (cursor) fallbackQ = query(fallbackQ, startAfter(cursor));
+          fallbackQ = query(fallbackQ, limit(limitVal));
+
+          querySnapshot = await getDocs(fallbackQ);
+
+          querySnapshot.forEach((doc) => {
+            posts.push({ id: doc.id, ...doc.data() });
+          });
+
+          // Client-side sort for the page by title
+          posts.sort((a, b) => {
+            const A = (a.title || '').toString().toLowerCase();
+            const B = (b.title || '').toString().toLowerCase();
+            if (A < B) return sortOrder === 'asc' ? -1 : 1;
+            if (A > B) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+          });
+
+          // lastVisible should reflect the server ordering (createdAt) for cursor continuation
+          if (querySnapshot.docs && querySnapshot.docs.length > 0) {
+            const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+            lastVisible = lastDoc.data().createdAt;
+          }
+        } else {
+          throw err; // Re-throw if not an index-related error we can handle
+        }
+      }
+
+      if (querySnapshot && posts.length === 0) {
+        querySnapshot.forEach((doc) => {
+          posts.push({ id: doc.id, ...doc.data() });
+          // Capture the value used for sorting to use as next cursor
+          const effectiveSortBy = (search && search.trim().length > 0) ? 'title' : sortBy;
+          const useIdSortWithSearch = effectiveSortBy === 'date' && !!userId && !search;
+          const valContext = useIdSortWithSearch ? doc.id : doc.data()[effectiveSortBy === 'date' ? 'createdAt' : effectiveSortBy];
+          lastVisible = valContext;
+        });
+      }
 
       return {
         posts,
@@ -509,24 +552,17 @@ export const selectIsExternalCached = state => state.posts.isExternalCached;
 
 // Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(
-  [selectAllPosts, (state) => state.preferences.filters, (state) => state.auth.user, (state) => state.posts.externalPosts],
-  (posts, filters, user, externalPosts) => {
-    // Return posts based on mode directly, without client-side filtering.
-    // The server (thunk) has already handled search, sort(mostly), and user filtering.
+  [(state) => state.posts.internalPosts, (state) => state.preferences.filters, (state) => state.auth.user, (state) => state.posts.externalPosts],
+  (internalPosts, filters, user, externalPosts) => {
+    // The server returns posts already sorted according to server-driven preferences.
+    // Use `internalPosts` (the exact array returned by the server thunk) to preserve server ordering
+    // instead of the entity adapter which may impose a client-side sortComparer.
 
     if (filters.option === 'external') {
       return externalPosts;
     }
 
-    // For 'created' or 'all', we return the internal posts.
-    // Note: If using internalPosts array directly is safer than selectAllPosts (which might have leftover adapter data),
-    // we should prefer that. But adapter is synced in reducer.
-    // However, adapter might contain posts that didn't match the *current* query 
-    // if we haven't rigorously cleared it. 
-    // We do resetPostsState on mode switch.
-    // But pagination appends? No, we replace adapter on fetch success.
-
-    return posts || [];
+    return internalPosts || [];
   }
 );
 

@@ -28,7 +28,7 @@
 
 * Multiple session interference.
 * Sort error
-* Found an issue while deleting an existing post.
+* Found an issue while deleting an existing post. (Fixed)
 
 
 

@@ -49,6 +49,7 @@ const initialState = {
   isLoading: false,
   isError: false,
   isInitialized: false, // Tracks if Firestore preferences have been loaded
+  isSortingPending: false, // transient UI flag to suppress intermediate renders during sort
 };
 
 // Async thunks
@@ -134,6 +135,10 @@ const preferencesSlice = createSlice({
       state.theme = theme;
       cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
     },
+    setPendingSort: (state, action) => {
+      // transient flag; do not persist to cache
+      state.isSortingPending = !!action.payload;
+    },
     resetPreferences: (state) => {
       // Reset to hardcoded defaults, not cached values
       state.filters = { ...defaultFilters };
@@ -197,7 +202,7 @@ const preferencesSlice = createSlice({
   }
 });
 
-export const { setSearchFilter, setSortPreference, setPostSelection, setCurrentPage, setItemsPerPage, setTheme, resetPreferences } = preferencesSlice.actions;
+export const { setSearchFilter, setSortPreference, setPostSelection, setCurrentPage, setItemsPerPage, setTheme, resetPreferences, setPendingSort } = preferencesSlice.actions;
 // Selectors
 export const selectFilters = state => state.preferences.filters;
 export const selectPagination = state => state.preferences.pagination;

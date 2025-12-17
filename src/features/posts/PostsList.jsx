@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal } from './postsSlice';
-import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection } from '../preferences/preferencesSlice';
+import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection, setPendingSort } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { SelectAllButton, ClearSelectionButton, DeleteSelectedButton, NewPostButton, SortControls, SearchBar, PaginationControls, HomeBtn, Dropdown } from './PostsControls';
@@ -81,16 +81,13 @@ function PostsList() {
 
 
 
-  useEffect(() => {
-    // Mode-Aware Fetching Strategy
-    // Mode-Aware Fetching Strategy
+  // Centralized fetch helper so we can refresh only the current page after deletes
+  const fetchCurrentPage = useCallback(() => {
     const { currentPage, itemsPerPage } = pagination;
     const { sortBy, sortOrder, search } = filters;
-    const internalCursor = internalPagination.cursors[currentPage]; // Get cursor for this page if available
+    const internalCursor = internalPagination?.cursors?.[currentPage]; // Get cursor for this page if available
 
     if (filters.option === 'created') {
-      // Force 'date' sort for server fetch to use documentId(), avoiding "userId + title" index requirement.
-      // Client-side selector will still apply the Title sort to the returned page.
       const effectiveSort = sortBy === 'title' ? 'date' : sortBy;
       dispatch(fetchInternalPosts({
         limit: itemsPerPage,
@@ -107,20 +104,15 @@ function PostsList() {
         page: currentPage,
         limit: itemsPerPage,
         sortBy,
-        page: currentPage,
-        limit: itemsPerPage,
-        sortBy,
         sortOrder,
         search
       }));
-    } else if (filters.option === 'all') {
-      // Only fetch internal posts (Community View)
+    } else {
+      // 'all' or default
       dispatch(fetchInternalPosts({
         limit: itemsPerPage,
         sortBy,
         sortOrder,
-        cursor: internalCursor,
-        page: currentPage,
         cursor: internalCursor,
         page: currentPage,
         mode: 'all',
@@ -128,11 +120,14 @@ function PostsList() {
       }));
     }
 
-    // Always fetch total count for the current mode (if internal) to ensure accurate pagination
     if (filters.option === 'created' || filters.option === 'all') {
       dispatch(fetchTotalCount({ userId: user?.uid, mode: filters.option, search }));
     }
-  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, filters.search, pagination.currentPage, pagination.itemsPerPage, user?.uid]); // Intentionally omitting internalPagination to avoid loops
+  }, [dispatch, filters.option, filters.sortBy, filters.sortOrder, filters.search, pagination.currentPage, pagination.itemsPerPage, user?.uid, internalPagination]);
+
+  useEffect(() => {
+    fetchCurrentPage();
+  }, [fetchCurrentPage]);
 
   useEffect(() => {
     const toast = location?.state?.toast;
@@ -155,8 +150,24 @@ function PostsList() {
   }, [dispatch, setSearchParams, filters.search]);
 
   const handleSort = useCallback((key, order) => {
+    // Mark sorting as pending while server-driven preferences and data sync
+    dispatch(setPendingSort(true));
     dispatch(setSortPreference({ key, order }));
-  }, [dispatch]);
+    // Reset to first page when sort changes
+    dispatch(setCurrentPage(1));
+    setSearchParams({ page: '1' });
+  }, [dispatch, setSearchParams]);
+
+  const isSortingPending = useSelector(state => state.preferences.isSortingPending);
+
+  // Clear pending flag when the relevant posts fetch completes
+  useEffect(() => {
+    if (!isSortingPending) return;
+    const relevantStatus = filters.option === 'external' ? externalStatus : status;
+    if (relevantStatus === 'succeeded') {
+      dispatch(setPendingSort(false));
+    }
+  }, [isSortingPending, status, externalStatus, filters.option, dispatch]);
 
   const handlePostSelection = useCallback((option) => {
     // Determine which mode to reset based on the *previous* mode (current at the time of click)
@@ -245,6 +256,12 @@ function PostsList() {
       if (isBatchDelete) {
         setSelectedIds([]);
         setToDelete(null);
+      }
+      // Refresh the current page only to reflect deletions without resetting preferences
+      try {
+        fetchCurrentPage();
+      } catch (e) {
+        // ignore - fetchCurrentPage is sync wrapper that dispatches thunks
       }
     } catch (err) {
       setToastMsg(err.message || 'Delete failed');
