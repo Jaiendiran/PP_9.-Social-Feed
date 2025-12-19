@@ -25,10 +25,10 @@
 * Found that all the filter are saving together if any one filter got updated. (Solved)
 * After creating a post, when I delete it from the PostList component, it gets deleted from the Firestore but stays in the app's state unless I refresh or re-render the component. When I do the deletion of a post from the PostManager component, it deletes from the Firestore, it navigates to the PostList component and within a second it throws an error: Post not found. (Solved)
 * Post items fetch error after the deletion of a post. (Solved)
+* Sort error (Fixed)
+* Found an issue while deleting an existing post. (Fixed)
 
 * Multiple session interference.
-* Sort error
-* Found an issue while deleting an existing post. (Fixed)
 
 
 
