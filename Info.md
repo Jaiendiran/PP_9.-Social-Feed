@@ -5,13 +5,18 @@
 
 * Add 'Favorites' option and post filtration.
 * User logs tracker.
-* An option to add user profile pic.
+* An option to add user profile pic during user signup and profile management page.
 * Comments to a post.
 * A dashboard only for admin to access showcases the reports of the app and its data's.
 * A landing page to the app.
 * Private posts specific to each user stored as a sub-collection.
 
 
+
+
+For a Website: Use WordPress (CMS) paired with the Cloudflare (CDN) free plan.
+For a Mobile App: Use Strapi (CMS) and deliver media through a developer-focused CDN like Cloudinary or jsDelivr.
+For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse proxy.
 
 
 ----------------------------------
