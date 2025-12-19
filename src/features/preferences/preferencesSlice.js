@@ -3,6 +3,36 @@ import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 import preferencesService from './preferencesService';
 import { logout } from '../auth/authSlice';
 
+// Session storage key for session-scoped preferences
+const SESSION_PREFS_KEY = `${cacheKeys.USER_PREFERENCES}_session`;
+
+const readSessionPrefs = () => {
+  try {
+    const raw = sessionStorage.getItem(SESSION_PREFS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to read session preferences', e);
+    return null;
+  }
+};
+
+const writeSessionPrefs = (sessionData) => {
+  try {
+    sessionStorage.setItem(SESSION_PREFS_KEY, JSON.stringify(sessionData));
+  } catch (e) {
+    console.warn('Failed to write session preferences', e);
+  }
+};
+
+const clearSessionPrefs = () => {
+  try {
+    sessionStorage.removeItem(SESSION_PREFS_KEY);
+  } catch (e) {
+    console.warn('Failed to clear session preferences', e);
+  }
+};
+
 // Constants for validation
 const VALID_THEMES = ['light', 'dark'];
 const MIN_ITEMS_PER_PAGE = 5;
@@ -10,8 +40,8 @@ const MAX_ITEMS_PER_PAGE = 50;
 const VALID_SORT_FIELDS = ['date', 'title'];
 const VALID_SORT_ORDERS = ['asc', 'desc'];
 
-// Get cached preferences for initial state (prevents flash on page refresh)
-const getCachedPreferences = () => {
+// Get cached persistent preferences (Firestore-backed)
+const getCachedPersistentPreferences = () => {
   try {
     const cached = cacheUtils.get(cacheKeys.USER_PREFERENCES, true);
     return cached || null;
@@ -20,7 +50,10 @@ const getCachedPreferences = () => {
   }
 };
 
-const cachedPrefs = getCachedPreferences();
+const cachedPrefs = getCachedPersistentPreferences();
+
+// Get session preferences from sessionStorage
+const sessionPrefs = readSessionPrefs();
 
 // Default values
 const defaultFilters = {
@@ -35,17 +68,13 @@ const defaultPagination = {
   itemsPerPage: 5
 };
 
-// Initialize with cached values if available, otherwise use defaults
+// Initialize with session (for session-scoped prefs) and persistent (for theme) values
 const initialState = {
-  filters: cachedPrefs?.filters
-    ? { ...defaultFilters, ...cachedPrefs.filters }
-    : defaultFilters,
-  pagination: cachedPrefs?.pagination
-    ? { ...defaultPagination, ...cachedPrefs.pagination }
-    : defaultPagination,
-  theme: (cachedPrefs?.theme && VALID_THEMES.includes(cachedPrefs.theme))
-    ? cachedPrefs.theme
-    : 'light',
+  // Session-scoped preferences (stored in sessionStorage)
+  filters: sessionPrefs?.filters ? { ...defaultFilters, ...sessionPrefs.filters } : defaultFilters,
+  pagination: sessionPrefs?.pagination ? { ...defaultPagination, ...sessionPrefs.pagination } : defaultPagination,
+  // Persistent preferences (stored in Firestore/local cache)
+  theme: (cachedPrefs?.theme && VALID_THEMES.includes(cachedPrefs.theme)) ? cachedPrefs.theme : 'light',
   isLoading: false,
   isError: false,
   isInitialized: false, // Tracks if Firestore preferences have been loaded
@@ -83,7 +112,8 @@ const preferencesSlice = createSlice({
   reducers: {
     setSearchFilter: (state, action) => {
       state.filters.search = action.payload;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      // Persist session-scoped prefs to sessionStorage only
+      writeSessionPrefs({ filters: state.filters, pagination: state.pagination });
     },
     setSortPreference: (state, action) => {
       const { key, order } = action.payload;
@@ -98,14 +128,15 @@ const preferencesSlice = createSlice({
       }
       state.filters.sortBy = key;
       state.filters.sortOrder = order;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      // Persist session-scoped prefs to sessionStorage only
+      writeSessionPrefs({ filters: state.filters, pagination: state.pagination });
     },
     setPostSelection: (state, action) => {
       const option = action.payload;
       state.filters.option = option;
       // Reset to first page when changing filter
       state.pagination.currentPage = 1;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      writeSessionPrefs({ filters: state.filters, pagination: state.pagination });
     },
     setCurrentPage: (state, action) => {
       const page = Math.max(1, Math.floor(Number(action.payload)));
@@ -114,7 +145,7 @@ const preferencesSlice = createSlice({
         return;
       }
       state.pagination.currentPage = page;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      writeSessionPrefs({ filters: state.filters, pagination: state.pagination });
     },
     setItemsPerPage: (state, action) => {
       const items = Math.floor(Number(action.payload));
@@ -124,7 +155,7 @@ const preferencesSlice = createSlice({
       }
       state.pagination.itemsPerPage = items;
       state.pagination.currentPage = 1;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      writeSessionPrefs({ filters: state.filters, pagination: state.pagination });
     },
     setTheme: (state, action) => {
       const theme = action.payload;
@@ -133,7 +164,8 @@ const preferencesSlice = createSlice({
         return;
       }
       state.theme = theme;
-      cacheUtils.set(cacheKeys.USER_PREFERENCES, state);
+      // Persist persistent prefs to cache/local for quick access; Firestore sync occurs in App.jsx
+      cacheUtils.set(cacheKeys.USER_PREFERENCES, { theme: state.theme });
     },
     setPendingSort: (state, action) => {
       // transient flag; do not persist to cache
@@ -147,8 +179,9 @@ const preferencesSlice = createSlice({
       state.isLoading = false;
       state.isError = false;
       state.isInitialized = false; // Reset initialization state
-      // Clear the preferences cache
+      // Clear persistent cache and session prefs
       cacheUtils.clear(cacheKeys.USER_PREFERENCES);
+      clearSessionPrefs();
     }
   },
   extraReducers: (builder) => {
@@ -159,27 +192,20 @@ const preferencesSlice = createSlice({
       .addCase(fetchUserPreferences.fulfilled, (state, action) => {
         state.isLoading = false;
         if (action.payload) {
-          // Compare timestamps: only apply Firestore data if it's newer than local cache
+          // Compare timestamps: only apply Firestore persistent data if it's newer than local cache
           const localCacheTimestamp = cacheUtils.getTimestamp(cacheKeys.USER_PREFERENCES);
           const firestoreTimestamp = action.payload.updatedAt || 0;
 
-          // If local cache is newer or same age, skip Firestore overwrite
-          // EXCEPTION: Always trust Firestore on initial load (!state.isInitialized) to prevent phantom defaults from blocking sync
           if (state.isInitialized && localCacheTimestamp && localCacheTimestamp >= firestoreTimestamp) {
+            state.isInitialized = true;
             return;
           }
 
-          // Firestore data is newer, apply it
+          // Apply only persistent prefs (theme). Session-scoped prefs (filters/pagination) are NOT read from Firestore.
           if (action.payload.theme) state.theme = action.payload.theme;
-          if (action.payload.filters) state.filters = { ...state.filters, ...action.payload.filters };
-          if (action.payload.pagination) state.pagination = { ...state.pagination, ...action.payload.pagination };
 
-          // Update local cache with Firestore data
-          cacheUtils.set(cacheKeys.USER_PREFERENCES, {
-            theme: state.theme,
-            filters: state.filters,
-            pagination: state.pagination
-          });
+          // Update persistent cache with Firestore data (theme)
+          cacheUtils.set(cacheKeys.USER_PREFERENCES, { theme: state.theme });
         }
         // Mark as initialized regardless of whether Firestore had data
         state.isInitialized = true;
@@ -196,8 +222,9 @@ const preferencesSlice = createSlice({
         state.isLoading = false;
         state.isError = false;
         state.isInitialized = false; // Reset initialization state
-        // Verify cache is cleared
+        // Clear persistent cache and session prefs
         cacheUtils.clear(cacheKeys.USER_PREFERENCES);
+        clearSessionPrefs();
       });
   }
 });

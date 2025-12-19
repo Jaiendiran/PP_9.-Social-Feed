@@ -27,8 +27,7 @@
 * Post items fetch error after the deletion of a post. (Solved)
 * Sort error (Fixed)
 * Found an issue while deleting an existing post. (Fixed)
-
-* Multiple session interference.
+* Multiple session interference. (Fixed)
 
 
 

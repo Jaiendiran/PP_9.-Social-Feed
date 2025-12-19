@@ -92,11 +92,10 @@ function App() {
   }, [user, dispatch]);
 
   // Memoize preferences to save to prevent object recreation
+  // Only persist Firestore-backed preferences (theme, etc.)
   const prefsToSave = useMemo(() => ({
-    theme: preferences.theme,
-    filters: preferences.filters,
-    pagination: preferences.pagination
-  }), [preferences.theme, preferences.filters, preferences.pagination]);
+    theme: preferences.theme
+  }), [preferences.theme]);
 
   // Sync preferences to Firestore with increased debounce
   // IMPORTANT: Only sync AFTER initial Firestore preferences have been loaded
@@ -124,7 +123,8 @@ function App() {
     }
   }, [isSessionExpired, user, dispatch, prefsToSave, isAuthInitialized]);
 
-  if (!isAuthInitialized) {
+  // Ensure auth and persistent preferences are initialized before rendering main UI
+  if (!isAuthInitialized || (user && !isInitialized)) {
     return <LoadingSpinner size="large" />;
   }
 

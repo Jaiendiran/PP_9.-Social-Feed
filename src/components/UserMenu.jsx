@@ -61,11 +61,12 @@ const UserMenu = React.memo(function UserMenu() {
         try {
             // 1. Force save current prefs to Firestore before they are lost
             if (user?.uid) {
-                await dispatch(saveUserPreferences({
-                    uid: user.uid,
-                    preferences: { theme, filters, pagination }
-                })).unwrap();
-            }
+                    await dispatch(saveUserPreferences({
+                        uid: user.uid,
+                        // Persist only Firestore-backed preferences (theme)
+                        preferences: { theme }
+                    })).unwrap();
+                }
         } catch (e) {
             console.error("Save failed or no changes to save", e);
         }
