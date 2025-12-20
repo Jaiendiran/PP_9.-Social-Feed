@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
 import { updateUserProfile, logout } from './authSlice';
 import authService from './authService';
 import { auth } from '../../firebase.config';
+import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import Toast from '../../components/Toast';
 import styles from './Profile.module.css';
 
 const Profile = () => {
@@ -25,12 +27,18 @@ const Profile = () => {
         confirmPassword: ''
     });
 
+    const [currentPwdStatus, setCurrentPwdStatus] = useState('idle'); // 'idle' | 'verifying' | 'verified' | 'failed'
+    const [currentPwdMessage, setCurrentPwdMessage] = useState('');
+    const verifyRequestId = useRef(0);
+
     const [showPasswordSection, setShowPasswordSection] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [passwordSuccess, setPasswordSuccess] = useState('');
+    const [toastOpen, setToastOpen] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
 
     useEffect(() => {
         if (user) {
@@ -40,6 +48,17 @@ const Profile = () => {
             });
         }
     }, [user]);
+
+    // no timers: verification is explicit via Verify button
+
+        // Clear sensitive password state when user logs out or changes
+        useEffect(() => {
+            if (!user) {
+                setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setCurrentPwdStatus('idle');
+                setCurrentPwdMessage('');
+            }
+        }, [user]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -59,7 +78,48 @@ const Profile = () => {
         }));
         setPasswordError('');
         setPasswordSuccess('');
+                // If user edits currentPassword, reset verification state
+                if (name === 'currentPassword') {
+                    setCurrentPwdStatus('idle');
+                    setCurrentPwdMessage('');
+                }
     };
+
+    const verifyCurrentPassword = useCallback(async () => {
+            const pwd = (passwordData.currentPassword || '').trim();
+            if (!pwd || !user?.email) return;
+
+            // Increment request id and capture local id to avoid out-of-order responses
+            verifyRequestId.current += 1;
+            const requestId = verifyRequestId.current;
+
+            // Avoid concurrent verifies from being applied out-of-order; mark as verifying
+            setCurrentPwdStatus('verifying');
+            setCurrentPwdMessage('Verifying...');
+
+            try {
+                const credential = EmailAuthProvider.credential(user.email, pwd);
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                // If a newer request started, ignore this result
+                if (verifyRequestId.current !== requestId) return;
+                setCurrentPwdStatus('verified');
+                setCurrentPwdMessage('Current password verified');
+            } catch (err) {
+                // If a newer request started, ignore this result
+                if (verifyRequestId.current !== requestId) return;
+                const code = err?.code || '';
+                if (code === 'auth/wrong-password') {
+                    setCurrentPwdStatus('failed');
+                    setCurrentPwdMessage('Incorrect current password');
+                } else if (code === 'auth/user-token-expired' || code === 'auth/requires-recent-login' || code === 'auth/session-expired') {
+                    setCurrentPwdStatus('failed');
+                    setCurrentPwdMessage('Session expired - please log in again');
+                } else {
+                    setCurrentPwdStatus('failed');
+                    setCurrentPwdMessage('Verification failed');
+                }
+            }
+        }, [passwordData.currentPassword, user]);
 
     const handleSaveProfile = async () => {
         setError('');
@@ -101,6 +161,12 @@ const Profile = () => {
         setPasswordError('');
         setPasswordSuccess('');
 
+        // Ensure current password has been verified
+        if (currentPwdStatus !== 'verified') {
+            setPasswordError('Please verify your current password before changing it.');
+            return;
+        }
+
         if (passwordData.newPassword.length < 6) {
             setPasswordError('New password must be at least 6 characters');
             return;
@@ -113,17 +179,33 @@ const Profile = () => {
 
         try {
             const currentUser = auth.currentUser;
-            if (currentUser) {
-                await authService.changePassword(currentUser, passwordData.newPassword);
-                setPasswordSuccess('Password changed successfully!');
-                setPasswordData({
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                });
-                setShowPasswordSection(false);
-                setTimeout(() => setPasswordSuccess(''), 3000);
+            if (!currentUser) {
+                setPasswordError('User not signed in');
+                return;
             }
+
+            // Final re-authentication to ensure recent login and to use the exact current password entered
+            try {
+                const pwd = (passwordData.currentPassword || '').trim();
+                const credential = EmailAuthProvider.credential(user.email, pwd);
+                await reauthenticateWithCredential(auth.currentUser, credential);
+            } catch (reauthErr) {
+                setPasswordError('Current password verification failed. Please re-enter your current password.');
+                setCurrentPwdStatus('failed');
+                setCurrentPwdMessage('Incorrect current password');
+                return;
+            }
+
+            // Now change the password
+            await authService.changePassword(currentUser, passwordData.newPassword);
+            // Show success toast and clear sensitive fields
+            setToastMessage('Password changed successfully!');
+            setToastOpen(true);
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            setCurrentPwdStatus('idle');
+            setCurrentPwdMessage('');
+            setShowPasswordSection(false);
+            setPasswordSuccess('');
         } catch (err) {
             setPasswordError(err.message || 'Failed to change password');
         }
@@ -261,41 +343,76 @@ const Profile = () => {
 
                             <form onSubmit={handleChangePassword}>
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>New Password</label>
-                                    <input
-                                        type="password"
-                                        name="newPassword"
-                                        value={passwordData.newPassword}
-                                        onChange={handlePasswordChange}
-                                        className={styles.input}
-                                        placeholder="Enter new password"
-                                        required
-                                    />
+                                        <label className={styles.label}>Current Password</label>
+                                        <div className={styles.row}>
+                                            <input
+                                                type="password"
+                                                name="currentPassword"
+                                                value={passwordData.currentPassword}
+                                                onChange={handlePasswordChange}
+                                                className={styles.input}
+                                                placeholder="Enter current password"
+                                                required
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={verifyCurrentPassword}
+                                                className={styles.verifyButton}
+                                                disabled={!passwordData.currentPassword.trim() || currentPwdStatus === 'verifying'}
+                                            >
+                                                {currentPwdStatus === 'verifying' ? 'Verifying…' : 'Verify'}
+                                            </button>
+                                        </div>
+                                        {/* Inline verification feedback */}
+                                        {currentPwdStatus === 'verified' && (
+                                            <div className={styles.successMessage}>{currentPwdMessage}</div>
+                                        )}
+                                        {currentPwdStatus === 'failed' && (
+                                            <div className={styles.errorMessage}>{currentPwdMessage}</div>
+                                        )}
                                 </div>
 
                                 <div className={styles.formGroup}>
-                                    <label className={styles.label}>Confirm New Password</label>
-                                    <input
-                                        type="password"
-                                        name="confirmPassword"
-                                        value={passwordData.confirmPassword}
-                                        onChange={handlePasswordChange}
-                                        className={styles.input}
-                                        placeholder="Confirm new password"
-                                        required
-                                    />
+                                        <label className={styles.label}>New Password</label>
+                                        <input
+                                            type="password"
+                                                name="newPassword"
+                                                value={passwordData.newPassword}
+                                                onChange={handlePasswordChange}
+                                                // verification is explicit via Verify button
+                                                className={styles.input}
+                                                placeholder="Enter new password"
+                                                required
+                                                disabled={currentPwdStatus !== 'verified'}
+                                        />
+                                </div>
+
+                                <div className={styles.formGroup}>
+                                        <label className={styles.label}>Confirm New Password</label>
+                                        <input
+                                            type="password"
+                                            name="confirmPassword"
+                                            value={passwordData.confirmPassword}
+                                            onChange={handlePasswordChange}
+                                            className={styles.input}
+                                            placeholder="Confirm new password"
+                                            required
+                                            disabled={currentPwdStatus !== 'verified'}
+                                        />
                                 </div>
 
                                 <div className={styles.actionButtons}>
-                                    <button type="submit" className={styles.saveButton}>
+                                    <button type="submit" className={styles.saveButton} disabled={currentPwdStatus !== 'verified'}>
                                         <FaSave /> Update Password
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            setShowPasswordSection(false);
-                                            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                                            setPasswordError('');
+                                        setShowPasswordSection(false);
+                                        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                                        setPasswordError('');
+                                        setCurrentPwdStatus('idle');
+                                        setCurrentPwdMessage('');
                                         }}
                                         className={styles.cancelButton}
                                     >
@@ -337,6 +454,8 @@ const Profile = () => {
                     cancelText="Cancel"
                 />
             )}
+            {/* Global toast for success/failure messages */}
+            <Toast open={toastOpen} message={toastMessage} type="success" onClose={() => setToastOpen(false)} />
         </div>
     );
 };
