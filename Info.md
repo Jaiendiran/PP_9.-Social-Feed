@@ -2,15 +2,14 @@
 
 * Implemented MockAPI (Done)
 * Implement globalized filteration, sort, and search. (Done)
+* An option to add user profile pic during user signup and profile management page. (Done)
 
-* Add 'Favorites' option and post filtration.
-* User logs tracker.
-* An option to add user profile pic during user signup and profile management page.
-* Comments to a post.
-* A dashboard only for admin to access showcases the reports of the app and its data's.
 * A landing page to the app.
+* Add 'Favorites' option and post filtration.
+* A dashboard only for admin to access showcases the reports of the app and its data's.
+* User logs tracker.
+* Comments to a post.
 * Private posts specific to each user stored as a sub-collection.
-
 
 
 
