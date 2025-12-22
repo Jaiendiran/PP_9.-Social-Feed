@@ -183,6 +183,90 @@ export const fetchPostById = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch all internal post IDs matching filters (mode: 'all'|'created')
+export const fetchAllInternalIds = createAsyncThunk(
+  'posts/fetchAllInternalIds',
+  async ({ userId, search, mode, sortBy, sortOrder }, { rejectWithValue }) => {
+    try {
+      const postsRef = collection(db, 'posts');
+      let q = query(postsRef);
+
+      if (search && search.trim().length > 0) {
+        const searchTerm = search.trim();
+        q = query(q, orderBy('title', 'asc'), startAt(searchTerm), endAt(searchTerm + '\uf8ff'));
+      } else {
+        if (mode === 'created' && userId) {
+          q = query(q, where('userId', '==', userId));
+        }
+
+        // If we're in 'created' mode and the UI requested title sort, map that to
+        // createdAt (date) to avoid requiring a composite index combining userId+title.
+        const effectiveSort = (mode === 'created' && sortBy === 'title') ? 'date' : sortBy;
+        const sortField = effectiveSort === 'title' ? 'title' : 'createdAt';
+        q = query(q, orderBy(sortField, sortOrder));
+      }
+
+      let querySnapshot;
+      let items = [];
+      try {
+        querySnapshot = await getDocs(q);
+      } catch (err) {
+        // Try a simple fallback when in 'created' mode: query by userId only (no orderBy)
+        // This avoids composite index requirements and should return the user's posts.
+        try {
+          if (mode === 'created' && userId) {
+            const fallbackQ = query(postsRef, where('userId', '==', userId));
+            querySnapshot = await getDocs(fallbackQ);
+          } else {
+            throw err;
+          }
+        } catch (fallbackErr) {
+          // If fallback also fails, rethrow original error for diagnostics
+          throw err;
+        }
+      }
+
+      if (querySnapshot) {
+        querySnapshot.forEach(docSnap => items.push({ id: docSnap.id, userId: docSnap.data().userId }));
+      }
+
+      return items;
+    } catch (err) {
+      return rejectWithValue('Failed to fetch internal IDs: ' + err.message);
+    }
+  }
+);
+
+// Async thunk to fetch all external post IDs by iterating MockAPI pages
+export const fetchAllExternalIds = createAsyncThunk(
+  'posts/fetchAllExternalIds',
+  async ({ limit = 50, search }, { rejectWithValue }) => {
+    try {
+      const ids = [];
+      let page = 1;
+      while (true) {
+        const params = new URLSearchParams({ page, limit });
+        if (search) params.append('search', search);
+        const res = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts?${params}`);
+        if (!res.ok) {
+          if (res.status === 404) break;
+          throw new Error('Failed to fetch external posts');
+        }
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) break;
+        data.forEach(p => ids.push(p.id));
+        if (data.length < limit) break;
+        page += 1;
+        // Safety: avoid infinite loops
+        if (page > 1000) break;
+      }
+      return ids;
+    } catch (err) {
+      return rejectWithValue('Failed to fetch external IDs: ' + err.message);
+    }
+  }
+);
+
 // Helper to safely construct orderBy (prevents linting/runtime issues if any)
 const checkBoxOrderBy = (field, order) => orderBy(field, order);
 // Async thunk to save a post to Firestore

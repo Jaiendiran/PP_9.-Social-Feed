@@ -34,7 +34,7 @@ For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse pr
 * Multiple session interference. (Fixed)
 
 
-* The select all feature is not working on External posts.
+* The select all feature is not working on both the Firepost and external posts. (Fixed)
 * During the first render of the app, the header is missing and only appears after the reload the component.
 
 

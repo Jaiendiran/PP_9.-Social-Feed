@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal } from './postsSlice';
+import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal, fetchAllInternalIds, fetchAllExternalIds } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection, setPendingSort } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -15,7 +15,9 @@ import styles from './PostsList.module.css';
 function PostsList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [selectedIds, setSelectedIds] = useState([]);
+  // Store selection as a Set of IDs for efficiency and to meet requirements
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [externalAllCount, setExternalAllCount] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' });
   const pageParam = parseInt(searchParams.get('page')) || 1;
 
@@ -43,17 +45,21 @@ function PostsList() {
   const user = useSelector(selectUser);
 
   // Memoize computed values to prevent recalculation on every render
-  const authorizedPosts = useMemo(() =>
-    allPosts.filter(post => user && (user.role === 'Admin' || post.userId === user.uid)),
-    [allPosts, user]
-  );
+  // For external mode, use paginatedPosts as the source (external posts are fetched page-wise)
+  const authorizedPosts = useMemo(() => {
+    const source = filters.option === 'external' ? paginatedPosts : allPosts;
+    return source.filter(post => user && (user.role === 'Admin' || post.userId === user.uid));
+  }, [allPosts, paginatedPosts, user, filters.option]);
 
-  const allSelected = useMemo(() =>
-    selectedIds.length > 0 &&
-    selectedIds.every(id => authorizedPosts.some(p => p.id === id)) &&
-    selectedIds.length === authorizedPosts.length,
-    [selectedIds, authorizedPosts]
-  );
+  const allSelected = useMemo(() => {
+    if (!selectedIds || selectedIds.size === 0) return false;
+    if (filters.option === 'external') {
+      return externalAllCount ? selectedIds.size === externalAllCount : false;
+    }
+    // created/all use totals from slice
+    const total = filters.option === 'created' ? createdTotal : allTotal;
+    return total ? selectedIds.size === total : false;
+  }, [selectedIds, filters.option, createdTotal, allTotal, externalAllCount]);
 
   const isEmpty = paginatedPosts.length === 0;
 
@@ -179,6 +185,9 @@ function PostsList() {
 
     dispatch(setPostSelection(option));
     setSearchParams({ page: '1' });
+    // Clear any existing selection when switching modes to avoid stale selections
+    setSelectedIds(new Set());
+    setExternalAllCount(null);
   }, [dispatch, setSearchParams]);
 
   const handlePageChange = useCallback((page) => {
@@ -186,23 +195,58 @@ function PostsList() {
     setSearchParams({ page: page.toString() });
   }, [dispatch, setSearchParams]);
 
-  const toggleSelectAll = useCallback(() => {
-    setSelectedIds(prev => prev.length === authorizedPosts.length ? [] : authorizedPosts.map(post => post.id));
-  }, [authorizedPosts]);
+  const toggleSelectAll = useCallback(async () => {
+    // If currently all-selected, clear selection
+    if (allSelected) {
+      setSelectedIds(new Set());
+      setExternalAllCount(null);
+      return;
+    }
+
+    try {
+      if (filters.option === 'external') {
+        // Fetch all external IDs from server
+        const ids = await dispatch(fetchAllExternalIds({ limit: 50, search: filters.search })).unwrap();
+        // ids is array of IDs (strings/numbers)
+        const authorized = ids.filter(id => {
+          // For external posts, only Admins or public posts; external posts are public, but we still respect Admin role if needed
+          return user && (user.role === 'Admin' || true);
+        });
+        setExternalAllCount(authorized.length);
+        setSelectedIds(new Set(authorized));
+      } else {
+        // Internal (created/all): fetch all internal ids with owner info
+        const items = await dispatch(fetchAllInternalIds({ userId: filters.option === 'created' ? user?.uid : undefined, search: filters.search, mode: filters.option, sortBy: filters.sortBy, sortOrder: filters.sortOrder })).unwrap();
+        // items is array of {id, userId}
+        const authorized = items.filter(it => user && (user.role === 'Admin' || it.userId === user.uid)).map(it => it.id);
+        setSelectedIds(new Set(authorized));
+      }
+    } catch (err) {
+      // fallback: no-op, show toast
+      setToastMsg(err.message || 'Failed to select all');
+      setToastType('error');
+      setToastOpen(true);
+    }
+  }, [allSelected, dispatch, filters.option, filters.search, filters.sortBy, filters.sortOrder, user]);
 
   const clearSelection = useCallback(() => {
-    setSelectedIds([]);
+    setSelectedIds(new Set());
+    setExternalAllCount(null);
   }, []);
 
   const handleBatchDeleteClick = useCallback(() => {
-    if (!selectedIds || selectedIds.length === 0) return;
-    setToDelete([...selectedIds]);
+    if (!selectedIds || selectedIds.size === 0) return;
+    setToDelete(Array.from(selectedIds));
     setIsBatchDelete(true);
     setConfirmOpen(true);
   }, [selectedIds]);
 
   const toggleSelect = useCallback((id) => {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   }, []);
 
   const handleItemsPerPageChange = useCallback((value) => {
@@ -254,7 +298,7 @@ function PostsList() {
       setToastOpen(true);
 
       if (isBatchDelete) {
-        setSelectedIds([]);
+        setSelectedIds(new Set());
         setToDelete(null);
       }
       // Refresh the current page only to reflect deletions without resetting preferences
@@ -287,11 +331,11 @@ function PostsList() {
           </div>
         </div>
         <div className={styles.rowTwoWrapper}>
-          <div className={styles.leftControls}>
+            <div className={styles.leftControls}>
             <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
             <NewPostButton />
-            <ClearSelectionButton disabled={allSelected || selectedIds.length === 0} onClear={clearSelection} />
-            {selectedIds.length > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            <ClearSelectionButton disabled={allSelected || selectedIds.size === 0} onClear={clearSelection} />
+            {selectedIds.size > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
             <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
           </div>
           <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
@@ -321,7 +365,7 @@ function PostsList() {
               <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
                 <input
                   type="checkbox"
-                  checked={selectedIds.includes(post.id)}
+                  checked={selectedIds.has(post.id)}
                   onClick={e => e.stopPropagation()}
                   onChange={() => toggleSelect(post.id)}
                   disabled={!canEditOrDelete}
