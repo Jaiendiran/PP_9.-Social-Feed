@@ -19,13 +19,16 @@ const Signup = () => {
         password: '',
         confirmPassword: ''
     });
+
+    // Add optional profile picture URL
+    const [photoURL, setPhotoURL] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [localError, setLocalError] = useState('');
 
     useEffect(() => {
         if (isSuccess && user) {
-            navigate('/');
+            navigate('/', { replace: true });
         }
 
         return () => {
@@ -39,6 +42,11 @@ const Signup = () => {
             ...prev,
             [name]: value
         }));
+        setLocalError('');
+    };
+
+    const handlePhotoURLChange = (e) => {
+        setPhotoURL(e.target.value);
         setLocalError('');
     };
 
@@ -82,7 +90,8 @@ const Signup = () => {
         dispatch(signup({
             email: formData.email,
             password: formData.password,
-            name: formData.name
+            name: formData.name,
+            photoURL: photoURL?.trim() || ''
         }));
     };
 
@@ -215,6 +224,23 @@ const Signup = () => {
                         {formData.confirmPassword && formData.password !== formData.confirmPassword && (
                             <span className={styles.validationMessage}>Passwords do not match</span>
                         )}
+                    </div>
+
+                    <div className={styles.inputGroup}>
+                        <label htmlFor="photoURL" className={styles.label}>
+                            Profile Picture URL <span className={styles.optional}>(Optional)</span>
+                        </label>
+                        <input
+                            type="url"
+                            id="photoURL"
+                            name="photoURL"
+                            value={photoURL}
+                            onChange={handlePhotoURLChange}
+                            className={styles.input}
+                            placeholder="https://example.com/your-avatar.jpg"
+                            disabled={isLoading}
+                        />
+                        <span className={styles.helpText}>Optional public image URL for your profile avatar</span>
                     </div>
 
                     <button

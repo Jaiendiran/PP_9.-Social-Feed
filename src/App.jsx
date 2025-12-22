@@ -7,6 +7,7 @@ import { useIdleTimer } from './utils/useIdleTimer';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
 import UserMenu from './components/UserMenu';
+import PublicGuard from './features/auth/guards/PublicGuard';
 import AuthGuard from './features/auth/guards/AuthGuard';
 import './styles/theme.css';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -29,6 +30,11 @@ function App() {
   const isSessionExpired = useSelector(selectIsSessionExpired);
   const isAuthInitialized = useSelector(selectAuthInitialized); // Check if auth is ready
   const dispatch = useDispatch();
+
+  // Determine current path from window (Router not yet mounted here)
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const hideHeaderRoutes = ['/login', '/signup', '/forgot-password'];
+  const hideHeader = hideHeaderRoutes.includes(pathname);
 
   // Initialize Inactivity Timer
   // Using default from hook (10s for testing as requested, usually 20 mins)
@@ -131,14 +137,16 @@ function App() {
   return (
     <Router>
       <ErrorBoundary>
-        <header className={styles.header}>
-          <div className={styles.headerContent}>
-            <h1>Redux Blog</h1>
-            <UserMenu />
-          </div>
-        </header>
+        {!hideHeader && (
+          <header className={styles.header}>
+            <div className={styles.headerContent}>
+              <h1>Redux Blog</h1>
+              <UserMenu />
+            </div>
+          </header>
+        )}
         <Suspense fallback={<LoadingSpinner size="large" />}>
-          <Routes>
+            <Routes>
             <Route path="/" element={
               <AuthGuard>
                 <Home />
@@ -154,8 +162,8 @@ function App() {
                 <PostManager />
               </AuthGuard>
             } />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<PublicGuard><Login /></PublicGuard>} />
+            <Route path="/signup" element={<PublicGuard><Signup /></PublicGuard>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/profile" element={
               <AuthGuard>

@@ -20,6 +20,45 @@
     border-bottom: 2px solid var(--border-color);
 }
 
+.profileHeaderRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.profileAvatarContainer {
+    width: 84px;
+    height: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profileAvatar {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border-color);
+}
+
+.profileAvatarPlaceholder {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.05rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    color: white;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 6px 18px rgba(98, 0, 234, 0.12);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
 .title {
     font-size: 2rem;
     font-weight: 700;

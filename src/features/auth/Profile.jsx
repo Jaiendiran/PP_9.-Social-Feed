@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaTrash, FaSave, FaTimes } from 'react-icons/fa';
@@ -40,11 +40,24 @@ const Profile = () => {
     const [toastOpen, setToastOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
 
+    const initials = useMemo(() => {
+        if (!user) return 'U';
+        const name = user.displayName || user.email || '';
+        if (!name) return 'U';
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+    }, [user]);
+
     useEffect(() => {
         if (user) {
             setFormData({
                 displayName: user.displayName || '',
-                email: user.email || ''
+                email: user.email || '',
+                photoURL: user.photoURL || ''
             });
         }
     }, [user]);
@@ -131,11 +144,14 @@ const Profile = () => {
         }
 
         try {
+            const dataToUpdate = {
+                displayName: formData.displayName
+            };
+            if (formData.photoURL !== undefined) dataToUpdate.photoURL = formData.photoURL;
+
             await dispatch(updateUserProfile({
                 uid: user.uid,
-                data: {
-                    displayName: formData.displayName
-                }
+                data: dataToUpdate
             })).unwrap();
 
             setSuccess('Profile updated successfully!');
@@ -236,9 +252,18 @@ const Profile = () => {
     return (
         <div className={styles.container}>
             <div className={styles.profileCard}>
-                <div className={styles.header}>
-                    <h1 className={styles.title}>My Profile</h1>
-                    <p className={styles.subtitle}>Manage your account settings</p>
+                <div className={styles.profileHeaderRow}>
+                    <div>
+                        <h1 className={styles.title}>My Profile</h1>
+                        <p className={styles.subtitle}>Manage your account settings</p>
+                    </div>
+                    <div className={styles.profileAvatarContainer}>
+                        {user.photoURL ? (
+                            <img src={user.photoURL} alt={user.displayName || 'User avatar'} className={styles.profileAvatar} onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=120'}} />
+                        ) : (
+                            <div className={styles.profileAvatarPlaceholder}>{initials}</div>
+                        )}
+                    </div>
                 </div>
 
                 {/* Success/Error Messages */}
@@ -294,6 +319,22 @@ const Profile = () => {
                             title="Email cannot be changed"
                         />
                         <span className={styles.helpText}>Email address cannot be changed</span>
+                    </div>
+
+                    <div className={styles.formGroup}>
+                        <label className={styles.label}>
+                            Profile Picture URL
+                        </label>
+                        <input
+                            type="url"
+                            name="photoURL"
+                            value={formData.photoURL || ''}
+                            onChange={handleChange}
+                            className={styles.input}
+                            placeholder="https://example.com/avatar.jpg"
+                            disabled={!isEditing || isLoading}
+                        />
+                        <span className={styles.helpText}>Optional public image URL for your profile</span>
                     </div>
 
                     {isEditing && (

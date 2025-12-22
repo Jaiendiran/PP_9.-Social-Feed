@@ -15,7 +15,7 @@ const Login = () => {
 
     useEffect(() => {
         if (isSuccess && user) {
-            navigate('/');
+            navigate('/', { replace: true });
         }
 
         // return () => {

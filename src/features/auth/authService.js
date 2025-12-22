@@ -95,15 +95,21 @@ const login = async (email, password) => {
     return userDoc || userCredential.user;
 };
 
-const signup = async (email, password, name) => {
+const signup = async (email, password, name, photoURL) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
-    // Update Firebase Auth profile
-    await updateProfile(userCredential.user, { displayName: name });
+    // Update Firebase Auth profile (displayName + optional photoURL)
+    const profileUpdates = {};
+    if (name) profileUpdates.displayName = name;
+    if (photoURL) profileUpdates.photoURL = photoURL;
+    if (Object.keys(profileUpdates).length) {
+        await updateProfile(userCredential.user, profileUpdates);
+    }
 
-    // Create Firestore user document
+    // Create Firestore user document with optional photoURL
     const userDoc = await createUserDocument(userCredential.user, {
-        displayName: name || ''
+        displayName: name || '',
+        photoURL: photoURL || ''
     });
 
     return userDoc;
@@ -127,10 +133,15 @@ const resetPassword = async (email) => {
 };
 
 const updateUserProfile = async (uid, data) => {
-    // Update Firebase Auth profile
+    // Update Firebase Auth profile (displayName and photoURL)
     const user = auth.currentUser;
-    if (user && data.displayName !== undefined) {
-        await updateProfile(user, { displayName: data.displayName });
+    const profileUpdates = {};
+    if (user) {
+        if (data.displayName !== undefined) profileUpdates.displayName = data.displayName;
+        if (data.photoURL !== undefined) profileUpdates.photoURL = data.photoURL;
+        if (Object.keys(profileUpdates).length) {
+            await updateProfile(user, profileUpdates);
+        }
     }
 
     // Update Firestore document

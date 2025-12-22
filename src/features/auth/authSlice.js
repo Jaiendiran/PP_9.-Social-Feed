@@ -50,7 +50,7 @@ export const login = createAsyncThunk('auth/login', async (user, thunkAPI) => {
 // Register user
 export const signup = createAsyncThunk('auth/signup', async (user, thunkAPI) => {
     try {
-        const userData = await authService.signup(user.email, user.password, user.name);
+        const userData = await authService.signup(user.email, user.password, user.name, user.photoURL);
         cacheUtils.set(cacheKeys.USER, userData);
 
         return userData;

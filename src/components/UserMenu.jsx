@@ -118,6 +118,7 @@ const UserMenu = React.memo(function UserMenu() {
                         src={user.photoURL}
                         alt={user.displayName || 'User'}
                         className={styles.avatar}
+                        onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=48'}}
                     />
                 ) : (
                     <div className={styles.avatarPlaceholder}>
@@ -136,6 +137,7 @@ const UserMenu = React.memo(function UserMenu() {
                                     src={user.photoURL}
                                     alt={user.displayName || 'User'}
                                     className={styles.userAvatarImage}
+                                    onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=80'}}
                                 />
                             ) : (
                                 <div className={styles.userAvatarPlaceholder}>
