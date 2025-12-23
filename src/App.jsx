@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, fetchUserPreferences, saveUserPreferences, selectIsInitialized } from './features/preferences/preferencesSlice';
@@ -31,10 +31,7 @@ function App() {
   const isAuthInitialized = useSelector(selectAuthInitialized); // Check if auth is ready
   const dispatch = useDispatch();
 
-  // Determine current path from window (Router not yet mounted here)
-  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const hideHeaderRoutes = ['/login', '/signup', '/forgot-password'];
-  const hideHeader = hideHeaderRoutes.includes(pathname);
+  // Header visibility will be handled by `AppHeader` via `useLocation` inside the Router
 
   // Initialize Inactivity Timer
   // Using default from hook (10s for testing as requested, usually 20 mins)
@@ -137,14 +134,7 @@ function App() {
   return (
     <Router>
       <ErrorBoundary>
-        {!hideHeader && (
-          <header className={styles.header}>
-            <div className={styles.headerContent}>
-              <h1>Redux Blog</h1>
-              <UserMenu />
-            </div>
-          </header>
-        )}
+        <AppHeader />
         <Suspense fallback={<LoadingSpinner size="large" />}>
             <Routes>
             <Route path="/" element={
@@ -174,6 +164,21 @@ function App() {
         </Suspense>
       </ErrorBoundary>
     </Router>
+  );
+}
+
+function AppHeader() {
+  const location = useLocation();
+  const hideHeaderRoutes = ['/login', '/signup', '/forgot-password'];
+  if (hideHeaderRoutes.includes(location.pathname)) return null;
+
+  return (
+    <header className={styles.header}>
+      <div className={styles.headerContent}>
+        <h1>Blogger</h1>
+        <UserMenu />
+      </div>
+    </header>
   );
 }
 

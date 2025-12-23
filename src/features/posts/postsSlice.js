@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, createEntityAdapter, createSelector } from '@reduxjs/toolkit';
 import { cacheUtils, cacheKeys } from '../../utils/cacheUtils';
 import { db } from '../../firebase.config';
-import { collection, getDocs, setDoc, deleteDoc, doc, getDoc, query, orderBy, limit, startAfter, where, documentId, getCountFromServer, startAt, endAt } from 'firebase/firestore';
+import { collection, getDocs, setDoc, deleteDoc, doc, getDoc, query, orderBy, limit, startAfter, where, documentId, getCountFromServer, startAt, endAt, writeBatch } from 'firebase/firestore';
 
 
 
@@ -267,6 +267,153 @@ export const fetchAllExternalIds = createAsyncThunk(
   }
 );
 
+// Async thunk to fetch total count for external posts (MockAPI)
+export const fetchExternalTotal = createAsyncThunk(
+  'posts/fetchExternalTotal',
+  async ({ search } = {}, { dispatch, rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams({ page: 1, limit: 1 });
+      if (search) params.append('search', search);
+      const res = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts?${params}`);
+      if (!res.ok) {
+        if (res.status === 404) return { count: 0, mode: 'external' };
+        // Fallback to counting by fetching all IDs
+        const ids = await dispatch(fetchAllExternalIds({ limit: 50, search })).unwrap();
+        return { count: ids.length, mode: 'external' };
+      }
+
+      const totalHeader = res.headers.get('X-Total-Count') || res.headers.get('x-total-count');
+      if (totalHeader) {
+        return { count: parseInt(totalHeader, 10), mode: 'external' };
+      }
+
+      // If header not present, fallback to counting IDs via fetchAllExternalIds
+      const ids = await dispatch(fetchAllExternalIds({ limit: 50, search })).unwrap();
+      return { count: ids.length, mode: 'external' };
+    } catch (err) {
+      return rejectWithValue('Failed to fetch external total: ' + err.message);
+    }
+  }
+);
+
+// Helper utilities
+const sleep = (ms) => new Promise(res => setTimeout(res, ms));
+const chunkArray = (arr, size) => {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+};
+
+// Run handler over items with a concurrency limit
+const runWithConcurrency = async (items, limit, handler) => {
+  const results = [];
+  let idx = 0;
+  const workers = new Array(Math.min(limit, items.length)).fill(null).map(async () => {
+    while (idx < items.length) {
+      const i = idx++;
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const r = await handler(items[i]);
+        results[i] = r;
+      } catch (err) {
+        results[i] = { id: items[i], ok: false, error: err.message || String(err) };
+      }
+    }
+  });
+  await Promise.all(workers);
+  return results;
+};
+
+// Thunk to delete posts in batches with progress reporting and partial reporting
+export const deletePostsInBatches = createAsyncThunk(
+  'posts/deletePostsInBatches',
+  async ({ ids = [], isExternal = false, batchSizeInternal = 200, batchSizeExternal = 20, concurrency = 3, retries = 2 }, thunkAPI) => {
+    const total = ids.length;
+    const successIds = [];
+    const failed = [];
+
+    thunkAPI.dispatch(postsSlice.actions.startDeleteProgress({ total }));
+
+    try {
+      if (isExternal) {
+        const chunks = chunkArray(ids, batchSizeExternal);
+        for (let i = 0; i < chunks.length; i++) {
+          if (thunkAPI.signal.aborted) break;
+          const batch = chunks[i];
+          for (let j = 0; j < batch.length; j++) {
+            const id = batch[j];
+            if (thunkAPI.signal.aborted) break;
+            let attempt = 0;
+            let deleted = false;
+            while (attempt <= retries && !deleted) {
+              try {
+                const res = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                successIds.push(id);
+                deleted = true;
+              } catch (err) {
+                attempt += 1;
+                if (attempt > retries) {
+                  failed.push({ id, error: err.message || String(err) });
+                } else {
+                  await sleep(200 * Math.pow(2, attempt));
+                }
+              }
+            }
+
+            thunkAPI.dispatch(postsSlice.actions.updateDeleteProgress({ processed: successIds.length + failed.length, successCount: successIds.length, failureCount: failed.length, failedItems: failed.map(f => f.id) }));
+            // small pause between requests to be nice to the API
+            await sleep(75);
+          }
+        }
+      } else {
+        // Firestore: use writeBatch (max 500) per batch
+        const chunks = chunkArray(ids, batchSizeInternal);
+        for (let i = 0; i < chunks.length; i++) {
+          if (thunkAPI.signal.aborted) break;
+          const batchIds = chunks[i];
+          let attempt = 0;
+          let committed = false;
+          while (attempt <= retries && !committed) {
+            try {
+              const batch = writeBatch(db);
+              batchIds.forEach(id => batch.delete(doc(db, 'posts', String(id))));
+              await batch.commit();
+              successIds.push(...batchIds);
+              committed = true;
+            } catch (err) {
+              attempt += 1;
+              if (attempt > retries) {
+                batchIds.forEach(id => failed.push({ id, error: err.message || String(err) }));
+              } else {
+                await sleep(200 * Math.pow(2, attempt));
+              }
+            }
+          }
+
+          thunkAPI.dispatch(postsSlice.actions.updateDeleteProgress({ processed: successIds.length + failed.length, successCount: successIds.length, failureCount: failed.length, failedItems: failed.map(f => f.id) }));
+        }
+      }
+
+      // Update local state to reflect deleted items
+      if (successIds.length > 0) {
+        if (isExternal) {
+          thunkAPI.dispatch(postsSlice.actions.removeExternalByIds(successIds));
+        } else {
+          thunkAPI.dispatch(postsSlice.actions.removeInternalByIds(successIds.map(String)));
+        }
+      }
+
+      thunkAPI.dispatch(postsSlice.actions.finishDeleteProgress({ total, processed: successIds.length + failed.length, successCount: successIds.length, failed: failed.length, failedItems: failed.map(f => f.id) }));
+
+      return { successIds, failed };
+    } catch (err) {
+      thunkAPI.dispatch(postsSlice.actions.finishDeleteProgress({ total, processed: successIds.length + failed.length, successCount: successIds.length, failed: failed.length, failedItems: failed.map(f => f.id) }));
+      return thunkAPI.rejectWithValue(err.message || String(err));
+    }
+  }
+);
+
 // Helper to safely construct orderBy (prevents linting/runtime issues if any)
 const checkBoxOrderBy = (field, order) => orderBy(field, order);
 // Async thunk to save a post to Firestore
@@ -464,7 +611,19 @@ const initialState = postsAdapter.getInitialState({
     cursors: {}
   },
   createdTotal: 0,
-  allTotal: 0
+  allTotal: 0,
+  externalTotal: 0,
+  deleteProgress: {
+    running: false,
+    total: 0,
+    processed: 0,
+    success: 0,
+    failed: 0,
+    failedItems: []
+  }
+  ,
+  // Persist selected IDs (array of string ids) so selection survives re-renders
+  selectedIds: []
 });
 
 // Helper to manage cursors for pages (1 -> null, 2 -> cursor1, etc)
@@ -476,6 +635,42 @@ const postsSlice = createSlice({
   name: 'posts',
   initialState,
   reducers: {
+    startDeleteProgress: (state, action) => {
+      state.deleteProgress = { running: true, total: action.payload.total || 0, processed: 0, success: 0, failed: 0, failedItems: [] };
+    },
+    updateDeleteProgress: (state, action) => {
+      const p = state.deleteProgress || {};
+      p.processed = action.payload.processed ?? p.processed;
+      p.success = action.payload.successCount ?? p.success;
+      p.failed = action.payload.failureCount ?? p.failed;
+      if (action.payload.failedItems) p.failedItems = p.failedItems.concat(action.payload.failedItems);
+      state.deleteProgress = p;
+    },
+    finishDeleteProgress: (state, action) => {
+      state.deleteProgress = { running: false, total: action.payload.total ?? 0, processed: action.payload.processed ?? 0, success: action.payload.successCount ?? 0, failed: action.payload.failed ?? 0, failedItems: action.payload.failedItems || [] };
+    },
+    // Selection reducers to persist selected IDs across re-renders
+    setSelection: (state, action) => {
+      state.selectedIds = Array.isArray(action.payload) ? action.payload.map(String) : [];
+    },
+    clearSelection: (state) => {
+      state.selectedIds = [];
+    },
+    toggleSelectionId: (state, action) => {
+      const id = String(action.payload);
+      const idx = state.selectedIds.indexOf(id);
+      if (idx === -1) state.selectedIds.push(id); else state.selectedIds.splice(idx, 1);
+    },
+    removeExternalByIds: (state, action) => {
+      const ids = (action.payload || []).map(String);
+      state.externalPosts = state.externalPosts.filter(p => !ids.includes(String(p.id)));
+    },
+    removeInternalByIds: (state, action) => {
+      const ids = (action.payload || []).map(String);
+      // Remove from adapter and from internalPosts list
+      postsAdapter.removeMany(state, ids);
+      state.internalPosts = state.internalPosts.filter(p => !ids.includes(String(p.id)));
+    },
     clearExternalPosts: (state) => {
       state.externalPosts = [];
       state.externalStatus = 'idle';
@@ -540,6 +735,10 @@ const postsSlice = createSlice({
         } else if (mode === 'all') {
           state.allTotal = count;
         }
+      })
+      .addCase(fetchExternalTotal.fulfilled, (state, action) => {
+        const { count } = action.payload || {};
+        state.externalTotal = count || 0;
       })
       .addCase(fetchPostById.pending, (state) => {
         state.internalStatus = 'loading';
@@ -618,6 +817,10 @@ const postsSlice = createSlice({
 });
 
 export const { clearExternalPosts, resetPostsState } = postsSlice.actions;
+export const { startDeleteProgress, updateDeleteProgress, finishDeleteProgress } = postsSlice.actions;
+export const { setSelection, clearSelection: clearSelectionAction, toggleSelectionId, removeExternalByIds, removeInternalByIds } = postsSlice.actions;
+// Backwards-compatible export: some modules may import `clearSelection` directly
+export const clearSelection = postsSlice.actions.clearSelection;
 export const { selectAll: selectAllPosts, selectById: selectPostById, selectIds: selectPostIds } = postsAdapter.getSelectors(state => state.posts);
 
 // Additional selectors for status, error, filters, and pagination
@@ -629,10 +832,13 @@ export const selectCreatedPagination = state => state.posts.createdPagination;
 export const selectAllPagination = state => state.posts.allPagination;
 export const selectCreatedTotal = state => state.posts.createdTotal;
 export const selectAllTotal = state => state.posts.allTotal;
+export const selectExternalTotal = state => state.posts.externalTotal;
 export const selectExternalPosts = state => state.posts.externalPosts;
 export const selectExternalPostsStatus = state => state.posts.externalStatus;
 export const selectExternalPostsError = state => state.posts.externalError;
 export const selectIsExternalCached = state => state.posts.isExternalCached;
+export const selectDeleteProgress = state => state.posts.deleteProgress;
+export const selectSelectedIds = state => state.posts.selectedIds || [];
 
 // Memoized selector for sorted and filtered posts
 export const selectSortedAndFilteredPosts = createSelector(

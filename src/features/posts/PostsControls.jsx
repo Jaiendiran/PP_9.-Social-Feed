@@ -66,11 +66,17 @@ export const ClearSelectionButton = React.memo(function ClearSelectionButton({ d
 });
 
 // Delete selected button
-export const DeleteSelectedButton = React.memo(function DeleteSelectedButton({ onDelete }) {
+export const DeleteSelectedButton = React.memo(function DeleteSelectedButton({ onDelete, selectedCount = 0 }) {
+  const label = selectedCount > 1 ? `Delete ${selectedCount} selected posts` : (selectedCount === 1 ? 'Delete 1 selected post' : 'Delete selected posts');
   return (
-    <button className={styles.controlOptionDanger} onClick={onDelete}>
-      <FaTrash /> Delete
-    </button>
+    <span className={styles.tooltipWrapper}>
+      <button className={styles.controlOptionDanger} onClick={onDelete} aria-label={label}>
+        <FaTrash /> Delete
+      </button>
+      {selectedCount > 0 && (
+        <span className={styles.tooltipText}>{label}</span>
+      )}
+    </span>
   );
 });
 
@@ -122,7 +128,7 @@ export const Dropdown = React.memo(function Dropdown({ selectedOption, onChange 
 });
 
 // Pagination controls
-export const PaginationControls = React.memo(function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange }) {
+export const PaginationControls = React.memo(function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange, totalCount }) {
   const handleItemsPerPageChange = useCallback((e) => {
     const value = parseInt(e.target.value, 10);
     onItemsPerPageChange(value);
@@ -141,47 +147,51 @@ export const PaginationControls = React.memo(function PaginationControls({ curre
     setSearchParams({ page: (currentPage + 1).toString() });
   }, [currentPage, onPageChange, setSearchParams]);
 
-  return (
-    <div className={styles.pagination}>
-      <div className={styles.paginationControls}>
-        <button
-          className={styles.pageButton}
-          onClick={handlePrevPage}
-          disabled={currentPage === 1}
-        >
-          Prev
-        </button>
+    return (
+      <div className={styles.pagination}>
+        <div className={styles.paginationControls}>
+          <button
+            className={styles.pageButton}
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+          >
+            Prev
+          </button>
 
-        <span className={styles.pageIndicator}>
-          Page {currentPage} of {totalPages}
-        </span>
+          <span className={styles.pageIndicator}>
+            Page {currentPage} of {totalPages}
+          </span>
 
-        <button
-          className={styles.pageButton}
-          onClick={handleNextPage}
-          disabled={currentPage === totalPages}
-        >
-          Next
-        </button>
+          <button
+            className={styles.pageButton}
+            onClick={handleNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </button>
+        </div>
+
+        <div className={styles.itemsPerPage}>
+          <label htmlFor="itemsPerPage">Items per page:</label>
+          <select
+            id="itemsPerPage"
+            value={itemsPerPage}
+            onChange={handleItemsPerPageChange}
+            className={styles.itemsSelect}
+          >
+            {[5, 10, 25, 50].map(value => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.totalCount}>
+          Total posts: {typeof totalCount === 'number' ? totalCount : '-'}
+        </div>
       </div>
-
-      <div className={styles.itemsPerPage}>
-        <label htmlFor="itemsPerPage">Items per page:</label>
-        <select
-          id="itemsPerPage"
-          value={itemsPerPage}
-          onChange={handleItemsPerPageChange}
-          className={styles.itemsSelect}
-        >
-          {[5, 10, 25, 50].map(value => (
-            <option key={value} value={value}>
-              {value}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
+    );
 });
 
 // Search bar component

@@ -236,6 +236,11 @@
   color: var(--button-danger);
 }
 
+/* Tooltip wrapper for immediate tooltip on hover */
+.tooltipWrapper{position:relative;display:inline-flex}
+.tooltipText{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--background-primary);padding:6px 8px;border-radius:6px;font-size:0.85rem;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.18);opacity:0;pointer-events:none}
+.tooltipWrapper:hover .tooltipText{opacity:1;pointer-events:auto}
+
 .sortIcon {
   font-size: 0.9rem;
 }

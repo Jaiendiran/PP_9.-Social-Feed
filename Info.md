@@ -8,7 +8,7 @@
 * Add 'Favorites' option and post filtration.
 * A dashboard only for admin to access showcases the reports of the app and its data's.
 * User logs tracker.
-* Comments to a post.
+* Comments to a each post.
 * Private posts specific to each user stored as a sub-collection.
 
 
@@ -32,10 +32,15 @@ For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse pr
 * Sort error (Fixed)
 * Found an issue while deleting an existing post. (Fixed)
 * Multiple session interference. (Fixed)
-
-
 * The select all feature is not working on both the Firepost and external posts. (Fixed)
-* During the first render of the app, the header is missing and only appears after the reload the component.
+* Batch delete is not working properly on MockAPI data.(Fixed)
+* Select all checkbox unchecks if the post list component re-renders. (Fixed)
+* During the first render of the app after login, the header is missing and only appears after the reload the component. (Fixed)
+
+* Google auth auto logs-in the previous user except asking for the gmail user credentials.
+* Google user's profile is not showing up.
+
+
 
 
 

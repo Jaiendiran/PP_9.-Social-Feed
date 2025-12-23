@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal, fetchAllInternalIds, fetchAllExternalIds } from './postsSlice';
+import { fetchInternalPosts, deletePosts, deleteExternalPosts, fetchExternalPosts, selectPaginatedPosts, selectPostsStatus, selectPostsError, selectExternalPostsStatus, selectExternalPostsError, selectInternalPosts, selectCreatedPagination, selectAllPagination, resetPostsState, fetchTotalCount, selectCreatedTotal, selectAllTotal, fetchAllInternalIds, fetchAllExternalIds, deletePostsInBatches, selectDeleteProgress, selectSelectedIds, setSelection, clearSelection as clearSelectionAction, toggleSelectionId, fetchExternalTotal, selectExternalTotal } from './postsSlice';
 import { setSearchFilter, setSortPreference, setCurrentPage, setItemsPerPage, selectFilters, selectPagination, setPostSelection, setPendingSort } from '../preferences/preferencesSlice';
 import { selectUser } from '../auth/authSlice';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
@@ -10,13 +10,15 @@ import SkeletonLoader from '../../components/SkeletonLoader';
 import { FormatDate } from '../../utils/formatDate';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
+import DeleteProgressModal from '../../components/DeleteProgressModal';
 import styles from './PostsList.module.css';
 
 function PostsList() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  // Store selection as a Set of IDs for efficiency and to meet requirements
-  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  // Selection persisted in Redux so it survives re-renders/remounts
+  const selectedIdsArr = useSelector(selectSelectedIds);
+  const selectedIds = useMemo(() => new Set((selectedIdsArr || []).map(String)), [selectedIdsArr]);
   const [externalAllCount, setExternalAllCount] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams({ page: '1' });
   const pageParam = parseInt(searchParams.get('page')) || 1;
@@ -34,6 +36,7 @@ function PostsList() {
   const allPagination = useSelector(selectAllPagination);
   const createdTotal = useSelector(selectCreatedTotal);
   const allTotal = useSelector(selectAllTotal);
+  const externalTotal = useSelector(selectExternalTotal);
 
   // Dynamic pagination selection based on mode
   const internalPagination = filters.option === 'all' ? allPagination : createdPagination;
@@ -54,12 +57,13 @@ function PostsList() {
   const allSelected = useMemo(() => {
     if (!selectedIds || selectedIds.size === 0) return false;
     if (filters.option === 'external') {
-      return externalAllCount ? selectedIds.size === externalAllCount : false;
+      const totalAvailable = (externalAllCount ?? externalTotal ?? 0);
+      return totalAvailable > 0 && selectedIds.size === totalAvailable;
     }
     // created/all use totals from slice
     const total = filters.option === 'created' ? createdTotal : allTotal;
     return total ? selectedIds.size === total : false;
-  }, [selectedIds, filters.option, createdTotal, allTotal, externalAllCount]);
+  }, [selectedIds, filters.option, createdTotal, allTotal, externalAllCount, externalTotal]);
 
   const isEmpty = paginatedPosts.length === 0;
 
@@ -113,6 +117,8 @@ function PostsList() {
         sortOrder,
         search
       }));
+      // Fetch external total count (lightweight) to show totals and for pagination
+      dispatch(fetchExternalTotal({ search }));
     } else {
       // 'all' or default
       dispatch(fetchInternalPosts({
@@ -186,7 +192,7 @@ function PostsList() {
     dispatch(setPostSelection(option));
     setSearchParams({ page: '1' });
     // Clear any existing selection when switching modes to avoid stale selections
-    setSelectedIds(new Set());
+    dispatch(clearSelectionAction());
     setExternalAllCount(null);
   }, [dispatch, setSearchParams]);
 
@@ -198,7 +204,7 @@ function PostsList() {
   const toggleSelectAll = useCallback(async () => {
     // If currently all-selected, clear selection
     if (allSelected) {
-      setSelectedIds(new Set());
+      dispatch(clearSelectionAction());
       setExternalAllCount(null);
       return;
     }
@@ -207,19 +213,16 @@ function PostsList() {
       if (filters.option === 'external') {
         // Fetch all external IDs from server
         const ids = await dispatch(fetchAllExternalIds({ limit: 50, search: filters.search })).unwrap();
-        // ids is array of IDs (strings/numbers)
-        const authorized = ids.filter(id => {
-          // For external posts, only Admins or public posts; external posts are public, but we still respect Admin role if needed
-          return user && (user.role === 'Admin' || true);
-        });
+        // ids is array of IDs (strings/numbers) - normalize to strings
+        const authorized = ids.filter(id => (user && (user.role === 'Admin' || true))).map(id => String(id));
         setExternalAllCount(authorized.length);
-        setSelectedIds(new Set(authorized));
+        dispatch(setSelection(authorized));
       } else {
         // Internal (created/all): fetch all internal ids with owner info
         const items = await dispatch(fetchAllInternalIds({ userId: filters.option === 'created' ? user?.uid : undefined, search: filters.search, mode: filters.option, sortBy: filters.sortBy, sortOrder: filters.sortOrder })).unwrap();
-        // items is array of {id, userId}
-        const authorized = items.filter(it => user && (user.role === 'Admin' || it.userId === user.uid)).map(it => it.id);
-        setSelectedIds(new Set(authorized));
+        // items is array of {id, userId} - normalize ids to strings
+        const authorized = items.filter(it => user && (user.role === 'Admin' || it.userId === user.uid)).map(it => String(it.id));
+        dispatch(setSelection(authorized));
       }
     } catch (err) {
       // fallback: no-op, show toast
@@ -230,9 +233,9 @@ function PostsList() {
   }, [allSelected, dispatch, filters.option, filters.search, filters.sortBy, filters.sortOrder, user]);
 
   const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
+    dispatch(clearSelectionAction());
     setExternalAllCount(null);
-  }, []);
+  }, [dispatch]);
 
   const handleBatchDeleteClick = useCallback(() => {
     if (!selectedIds || selectedIds.size === 0) return;
@@ -242,12 +245,8 @@ function PostsList() {
   }, [selectedIds]);
 
   const toggleSelect = useCallback((id) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
+    dispatch(toggleSelectionId(String(id)));
+  }, [dispatch]);
 
   const handleItemsPerPageChange = useCallback((value) => {
     dispatch(setItemsPerPage(value));
@@ -287,10 +286,23 @@ function PostsList() {
     try {
       const idsToDelete = isBatchDelete ? toDelete : [toDelete];
 
-      if (filters.option === 'external') {
-        await dispatch(deleteExternalPosts(idsToDelete)).unwrap();
+      // Use robust batch delete for multi-item deletes to avoid intermittent MockAPI failures.
+      if (idsToDelete.length > 5) {
+        // Large deletes: show progress modal
+        const isExternal = filters.option === 'external';
+        const promise = dispatch(deletePostsInBatches({ ids: idsToDelete, isExternal }));
+        await promise.unwrap();
+      } else if (idsToDelete.length > 1) {
+        // Small multi-delete: still use batch thunk (no modal) for reliability
+        const isExternal = filters.option === 'external';
+        await dispatch(deletePostsInBatches({ ids: idsToDelete, isExternal })).unwrap();
       } else {
-        await dispatch(deletePosts(idsToDelete)).unwrap();
+        // Single delete: use existing simple thunks
+        if (filters.option === 'external') {
+          await dispatch(deleteExternalPosts(idsToDelete)).unwrap();
+        } else {
+          await dispatch(deletePosts(idsToDelete)).unwrap();
+        }
       }
 
       setToastMsg('Post(s) deleted successfully');
@@ -298,7 +310,7 @@ function PostsList() {
       setToastOpen(true);
 
       if (isBatchDelete) {
-        setSelectedIds(new Set());
+        dispatch(clearSelectionAction());
         setToDelete(null);
       }
       // Refresh the current page only to reflect deletions without resetting preferences
@@ -315,6 +327,14 @@ function PostsList() {
       setConfirmOpen(false);
     }
   };
+
+  const deleteProgress = useSelector(selectDeleteProgress);
+
+  const [inflightPromise, setInflightPromise] = useState(null);
+
+  useEffect(() => {
+    // when delete progress becomes running, we could store a promise ref if needed
+  }, [deleteProgress]);
 
   return (
     <div className={styles.postsList}>
@@ -335,12 +355,27 @@ function PostsList() {
             <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
             <NewPostButton />
             <ClearSelectionButton disabled={allSelected || selectedIds.size === 0} onClear={clearSelection} />
-            {selectedIds.size > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} />)}
+            {selectedIds.size > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} selectedCount={selectedIds.size} />)}
             <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
           </div>
           <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
         </div>
       </div>
+      {deleteProgress && deleteProgress.running && (
+        <DeleteProgressModal
+          progress={deleteProgress}
+          onCancel={() => {
+            // Abort current running thunk if available
+            // RTK dispatch returns an abortable promise; we don't currently store it here.
+            // As a best-effort, dispatch finish to stop UI.
+            dispatch(postsSlice.actions.finishDeleteProgress({ total: deleteProgress.total, processed: deleteProgress.processed, successCount: deleteProgress.success, failed: deleteProgress.failed, failedItems: deleteProgress.failedItems }));
+          }}
+          onRetry={(failedIds) => {
+            if (!failedIds || failedIds.length === 0) return;
+            dispatch(deletePostsInBatches({ ids: failedIds, isExternal: filters.option === 'external' }));
+          }}
+        />
+      )}
 
       <div className={styles.postsContainer}>
         <div className={styles.postsGrid}>
@@ -365,7 +400,7 @@ function PostsList() {
               <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
                 <input
                   type="checkbox"
-                  checked={selectedIds.has(post.id)}
+                  checked={selectedIds.has(String(post.id))}
                   onClick={e => e.stopPropagation()}
                   onChange={() => toggleSelect(post.id)}
                   disabled={!canEditOrDelete}
@@ -404,15 +439,16 @@ function PostsList() {
           currentPage={pageParam}
           totalPages={
             filters.option === 'external'
-              ? Math.ceil(100 / pagination.itemsPerPage) // MockAPI has 100 posts
+              ? Math.max(1, Math.ceil((externalTotal || 0) / pagination.itemsPerPage))
               : filters.option === 'created'
-                ? Math.ceil(createdTotal / pagination.itemsPerPage) || 1
-                : Math.ceil(allTotal / pagination.itemsPerPage) || 1
+                ? Math.max(1, Math.ceil((createdTotal || 0) / pagination.itemsPerPage))
+                : Math.max(1, Math.ceil((allTotal || 0) / pagination.itemsPerPage))
           }
           onPageChange={handlePageChange}
           setSearchParams={setSearchParams}
           itemsPerPage={pagination.itemsPerPage}
           onItemsPerPageChange={handleItemsPerPageChange}
+          totalCount={filters.option === 'external' ? externalTotal : (filters.option === 'created' ? createdTotal : allTotal)}
         />
       )}
 
