@@ -67,6 +67,9 @@ function PostsList() {
 
   const isEmpty = paginatedPosts.length === 0;
 
+  // When viewing external source, regular users should have read-only access
+  const isExternalReadOnly = filters.option === 'external' && !(user && user.role === 'Admin');
+
   // Calculate counts for pagination
   const createdPostsCount = useMemo(() =>
     allPosts.filter(p => !p.isExternal && user && p.userId === user.uid).length,
@@ -208,6 +211,14 @@ function PostsList() {
       setExternalAllCount(null);
       return;
     }
+
+      // Prevent select-all for read-only external viewers
+      if (filters.option === 'external' && isExternalReadOnly) {
+        setToastMsg('Not authorized to select external posts');
+        setToastType('error');
+        setToastOpen(true);
+        return;
+      }
 
     try {
       if (filters.option === 'external') {
@@ -352,10 +363,14 @@ function PostsList() {
         </div>
         <div className={styles.rowTwoWrapper}>
             <div className={styles.leftControls}>
-            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty} />
-            <NewPostButton />
-            <ClearSelectionButton disabled={allSelected || selectedIds.size === 0} onClear={clearSelection} />
-            {selectedIds.size > 0 && (<DeleteSelectedButton onDelete={handleBatchDeleteClick} selectedCount={selectedIds.size} />)}
+            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty || isExternalReadOnly} />
+            <NewPostButton disabled={isExternalReadOnly} />
+            {!isExternalReadOnly && !allSelected && selectedIds.size > 0 && (
+              <ClearSelectionButton onClear={clearSelection} />
+            )}
+            {!isExternalReadOnly && selectedIds.size > 0 && (
+              <DeleteSelectedButton onDelete={handleBatchDeleteClick} selectedCount={selectedIds.size} />
+            )}
             <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
           </div>
           <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
@@ -395,7 +410,7 @@ function PostsList() {
           )}
 
           {!isFirstLoad && paginatedPosts.map(post => {
-            const canEditOrDelete = user && (user.role === 'Admin' || post.userId === user.uid);
+            const canEditOrDelete = !isExternalReadOnly && user && (user.role === 'Admin' || post.userId === user.uid);
             return (
               <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
                 <input

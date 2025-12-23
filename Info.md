@@ -36,10 +36,15 @@ For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse pr
 * Batch delete is not working properly on MockAPI data.(Fixed)
 * Select all checkbox unchecks if the post list component re-renders. (Fixed)
 * During the first render of the app after login, the header is missing and only appears after the reload the component. (Fixed)
+* Google auth auto logs-in the previous user except asking for the gmail user credentials. (Fixed)
+* Google user's profile is not showing up. (Fixed)
 
-* Google auth auto logs-in the previous user except asking for the gmail user credentials.
-* Google user's profile is not showing up.
+* google sign-in is still not smooth.
 
+
+
+
+https://lh3.googleusercontent.com/a/ACg8ocJYc9be0DkA8N2ijd8A07s3Jb8Ac8wgGstbXZcWrZalxxyKClOTgA=s96-c
 
 
 

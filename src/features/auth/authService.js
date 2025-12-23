@@ -3,6 +3,8 @@ import { doc, setDoc, getDoc, updateDoc, deleteDoc, serverTimestamp } from 'fire
 import { auth, db } from '../../firebase.config';
 
 const googleProvider = new GoogleAuthProvider();
+// Always prompt account selection for Google sign-in to avoid silent reuse
+googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 // Helper to serialize user data (convert Firestore Timestamps to ISO strings)
 const serializeUserData = (userData) => {
@@ -116,11 +118,65 @@ const signup = async (email, password, name, photoURL) => {
 };
 
 const logout = async () => {
-    await signOut(auth);
+    try {
+        // If we stored a Google OAuth access token, try to revoke it first
+        const token = sessionStorage.getItem('google_oauth_access_token') || localStorage.getItem('google_oauth_access_token');
+        if (token) {
+            try {
+                // Revoke the token via Google's token revocation endpoint
+                await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+                });
+            } catch (revErr) {
+                console.warn('Failed to revoke Google token:', revErr);
+            }
+        }
+
+        // Sign out from Firebase Auth
+        await signOut(auth);
+
+        // Attempt to clear Google cookies by opening the logout endpoint in a short-lived window
+        try {
+            const w = window.open('https://accounts.google.com/Logout', '_blank', 'noopener,noreferrer,width=500,height=500');
+            if (w) setTimeout(() => w.close(), 800);
+        } catch (e) {
+            // ignore popup blockers
+        }
+
+        // Clear any cached client state that may persist sessions
+        try {
+            sessionStorage.clear();
+        } catch (e) {
+            console.warn('Failed to clear sessionStorage:', e);
+        }
+        try {
+            localStorage.clear();
+        } catch (e) {
+            console.warn('Failed to clear localStorage:', e);
+        }
+    } catch (err) {
+        console.error('Logout failed:', err);
+        throw err;
+    }
 };
 
 const loginWithGoogle = async () => {
+    // Ensure provider prompts account selection per call as well
+    googleProvider.setCustomParameters({ prompt: 'select_account' });
     const userCredential = await signInWithPopup(auth, googleProvider);
+
+    // Try to extract the OAuth access token so we can revoke it on logout if needed
+    try {
+        const credential = GoogleAuthProvider.credentialFromResult(userCredential);
+        const accessToken = credential?.accessToken;
+        if (accessToken) {
+            // Store in sessionStorage for short-lived lifetime
+            try { sessionStorage.setItem('google_oauth_access_token', accessToken); } catch (e) { console.warn('Failed to store Google token:', e); }
+        }
+    } catch (e) {
+        // Not critical — continue
+    }
 
     // Create user document if it doesn't exist
     const userDoc = await createUserDocument(userCredential.user);

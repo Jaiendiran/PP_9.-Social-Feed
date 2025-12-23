@@ -27,11 +27,16 @@ export const BackArrow = React.memo(function BackArrow({ currentPage }) {
 });
 
 // New post button
-export const NewPostButton = React.memo(function NewPostButton() {
-  const navigate = useNavigate()
+export const NewPostButton = React.memo(function NewPostButton({ disabled = false }) {
+  const navigate = useNavigate();
 
   return (
-    <button className={styles.controlOption} onClick={() => navigate('/add')}>
+    <button
+      className={disabled ? `${styles.controlOption} ${styles.disabledControl}` : styles.controlOption}
+      onClick={() => { if (!disabled) navigate('/add'); }}
+      disabled={disabled}
+      aria-disabled={disabled}
+    >
       <FaPlus /> Add
     </button>
   );
@@ -39,14 +44,14 @@ export const NewPostButton = React.memo(function NewPostButton() {
 
 // Select all button
 export const SelectAllButton = React.memo(function SelectAllButton({ allSelected, onToggle, disabled }) {
-  if (disabled) return null;
   return (
-    <label className={styles.controlOption} title={allSelected ? 'Deselect All' : 'Select All'}>
+    <label className={disabled ? `${styles.controlOption} ${styles.disabledControl}` : styles.controlOption} title={allSelected ? 'Deselect All' : 'Select All'}>
       <input
         type="checkbox"
         checked={allSelected}
         onChange={onToggle}
         disabled={disabled}
+        aria-disabled={disabled}
       />
     </label>
   );
@@ -54,11 +59,12 @@ export const SelectAllButton = React.memo(function SelectAllButton({ allSelected
 
 // Clear selection button
 export const ClearSelectionButton = React.memo(function ClearSelectionButton({ disabled, onClear }) {
-  if (disabled) return null; // Or use stylistic disable
   return (
     <button
-      className={styles.controlOption}
-      onClick={onClear}
+      className={disabled ? `${styles.controlOption} ${styles.disabledControl}` : styles.controlOption}
+      onClick={(e) => { if (!disabled) onClear(e); }}
+      disabled={disabled}
+      aria-disabled={disabled}
     >
       <FaTimesCircle /> Clear
     </button>

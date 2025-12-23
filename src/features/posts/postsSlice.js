@@ -81,34 +81,41 @@ export const fetchInternalPosts = createAsyncThunk(
           });
 
           // lastVisible should reflect the server ordering (createdAt) for cursor continuation
-          if (querySnapshot.docs && querySnapshot.docs.length > 0) {
+          if (querySnapshot && querySnapshot.docs && querySnapshot.docs.length > 0) {
             const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
             lastVisible = lastDoc.data().createdAt;
           }
-        } else {
-          throw err; // Re-throw if not an index-related error we can handle
+
+          return {
+            posts,
+            lastVisible, // Value for next page
+            hasMore: posts.length === limitVal,
+            page, // Pass page back for reducer to map cursor
+            mode // Pass mode back to reducer
+          };
         }
+        // if not a special index error case, rethrow to outer catch
+        throw err;
       }
 
-      if (querySnapshot && posts.length === 0) {
+      // Normal successful path: build posts from querySnapshot
+      if (querySnapshot && querySnapshot.docs) {
         querySnapshot.forEach((doc) => {
           posts.push({ id: doc.id, ...doc.data() });
-          // Capture the value used for sorting to use as next cursor
-          const effectiveSortBy = (search && search.trim().length > 0) ? 'title' : sortBy;
-          const useIdSortWithSearch = effectiveSortBy === 'date' && !!userId && !search;
-          const valContext = useIdSortWithSearch ? doc.id : doc.data()[effectiveSortBy === 'date' ? 'createdAt' : effectiveSortBy];
-          lastVisible = valContext;
         });
+
+        if (querySnapshot.docs.length > 0) {
+          const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+          lastVisible = lastDoc.data().createdAt;
+        }
       }
 
       return {
         posts,
-        lastVisible, // Value for next page
-        hasMore: posts.length === limitVal,
-        lastVisible, // Value for next page
-        hasMore: posts.length === limitVal,
-        page, // Pass page back for reducer to map cursor
-        mode // Pass mode back to reducer
+        lastVisible,
+        hasMore: (querySnapshot && querySnapshot.docs && querySnapshot.docs.length === limitVal),
+        page,
+        mode
       };
     } catch (err) {
       return rejectWithValue('Failed to fetch internal posts: ' + err.message);
@@ -238,10 +245,17 @@ export const fetchAllInternalIds = createAsyncThunk(
 );
 
 // Async thunk to fetch all external post IDs by iterating MockAPI pages
+
+// Re-create fetchAllExternalIds with access to thunkAPI to enforce role checks
 export const fetchAllExternalIds = createAsyncThunk(
   'posts/fetchAllExternalIds',
-  async ({ limit = 50, search }, { rejectWithValue }) => {
+  async ({ limit = 50, search } = {}, { getState, rejectWithValue }) => {
     try {
+      const state = getState();
+      const user = state.auth?.user;
+      if (!user || user.role !== 'Admin') {
+        return rejectWithValue('Unauthorized');
+      }
       const ids = [];
       let page = 1;
       while (true) {
@@ -257,7 +271,6 @@ export const fetchAllExternalIds = createAsyncThunk(
         data.forEach(p => ids.push(p.id));
         if (data.length < limit) break;
         page += 1;
-        // Safety: avoid infinite loops
         if (page > 1000) break;
       }
       return ids;
@@ -266,6 +279,7 @@ export const fetchAllExternalIds = createAsyncThunk(
     }
   }
 );
+    
 
 // Async thunk to fetch total count for external posts (MockAPI)
 export const fetchExternalTotal = createAsyncThunk(
@@ -328,6 +342,19 @@ const runWithConcurrency = async (items, limit, handler) => {
 export const deletePostsInBatches = createAsyncThunk(
   'posts/deletePostsInBatches',
   async ({ ids = [], isExternal = false, batchSizeInternal = 200, batchSizeExternal = 20, concurrency = 3, retries = 2 }, thunkAPI) => {
+    // Enforce admin-only external deletes at thunk level
+    if (isExternal) {
+      try {
+        const state = thunkAPI.getState();
+        const user = state.auth?.user;
+        if (!user || user.role !== 'Admin') {
+          thunkAPI.dispatch(postsSlice.actions.finishDeleteProgress({ total: ids.length, processed: 0, successCount: 0, failed: ids.length, failedItems: ids }));
+          return thunkAPI.rejectWithValue('Unauthorized');
+        }
+      } catch (e) {
+        // proceed and let later checks fail
+      }
+    }
     const total = ids.length;
     const successIds = [];
     const failed = [];
@@ -512,8 +539,14 @@ export const fetchExternalPosts = createAsyncThunk(
 // Async thunk to create an external post
 export const createExternalPost = createAsyncThunk(
   'posts/createExternalPost',
-  async (post, { rejectWithValue }) => {
+  async (post, { getState, rejectWithValue }) => {
     try {
+      const state = getState();
+      const user = state.auth?.user;
+      if (!user || user.role !== 'Admin') {
+        return rejectWithValue('Unauthorized');
+      }
+
       const response = await fetch('https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts', {
         method: 'POST',
         headers: {
@@ -524,7 +557,6 @@ export const createExternalPost = createAsyncThunk(
           content: post.content,
           userId: post.userId,
           authorName: post.authorName,
-          // MockAPI generates ID and createdAt
         }),
       });
 
@@ -540,8 +572,14 @@ export const createExternalPost = createAsyncThunk(
 // Async thunk to update an external post
 export const updateExternalPost = createAsyncThunk(
   'posts/updateExternalPost',
-  async (post, { rejectWithValue }) => {
+  async (post, { getState, rejectWithValue }) => {
     try {
+      const state = getState();
+      const user = state.auth?.user;
+      if (!user || user.role !== 'Admin') {
+        return rejectWithValue('Unauthorized');
+      }
+
       const response = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${post.id}`, {
         method: 'PUT',
         headers: {
@@ -550,7 +588,6 @@ export const updateExternalPost = createAsyncThunk(
         body: JSON.stringify({
           title: post.title,
           content: post.content,
-          // Update other fields if needed
         }),
       });
 
@@ -566,8 +603,14 @@ export const updateExternalPost = createAsyncThunk(
 // Async thunk to delete external posts
 export const deleteExternalPosts = createAsyncThunk(
   'posts/deleteExternalPosts',
-  async (ids, { rejectWithValue }) => {
+  async (ids, { getState, rejectWithValue }) => {
     try {
+      const state = getState();
+      const user = state.auth?.user;
+      if (!user || user.role !== 'Admin') {
+        return rejectWithValue('Unauthorized');
+      }
+
       await Promise.all(ids.map(id =>
         fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${id}`, {
           method: 'DELETE',

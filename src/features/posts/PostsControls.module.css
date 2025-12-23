@@ -241,6 +241,13 @@
 .tooltipText{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--background-primary);padding:6px 8px;border-radius:6px;font-size:0.85rem;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.18);opacity:0;pointer-events:none}
 .tooltipWrapper:hover .tooltipText{opacity:1;pointer-events:auto}
 
+/* Disabled control styling (greyed out and non-interactive) */
+.disabledControl {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .sortIcon {
   font-size: 0.9rem;
 }
