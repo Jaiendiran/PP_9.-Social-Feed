@@ -48,10 +48,18 @@ function PostsList() {
   const user = useSelector(selectUser);
 
   // Memoize computed values to prevent recalculation on every render
-  // For external mode, use paginatedPosts as the source (external posts are fetched page-wise)
+  // For external mode, regular users should be able to view all external posts (read-only).
   const authorizedPosts = useMemo(() => {
-    const source = filters.option === 'external' ? paginatedPosts : allPosts;
-    return source.filter(post => user && (user.role === 'Admin' || post.userId === user.uid));
+    if (filters.option === 'external') {
+      // Return the server-paginated external posts as-is for viewing
+      return paginatedPosts || [];
+    }
+    if (filters.option === 'created') {
+      // Created mode: show only posts owned by user (or Admin)
+      return (allPosts || []).filter(post => user && (user.role === 'Admin' || post.userId === user.uid));
+    }
+    // 'all' mode: show all internal posts (read access for everyone)
+    return allPosts || [];
   }, [allPosts, paginatedPosts, user, filters.option]);
 
   const allSelected = useMemo(() => {
@@ -65,7 +73,7 @@ function PostsList() {
     return total ? selectedIds.size === total : false;
   }, [selectedIds, filters.option, createdTotal, allTotal, externalAllCount, externalTotal]);
 
-  const isEmpty = paginatedPosts.length === 0;
+  const isEmpty = (authorizedPosts || []).length === 0;
 
   // When viewing external source, regular users should have read-only access
   const isExternalReadOnly = filters.option === 'external' && !(user && user.role === 'Admin');
@@ -285,7 +293,7 @@ function PostsList() {
     navigate(`/posts/${postId}?page=${pageParam}`);
   }, [navigate, pageParam]);
 
-  const isFirstLoad = (currentStatus === 'loading' || currentStatus === 'idle') && paginatedPosts.length === 0;
+  const isFirstLoad = (currentStatus === 'loading' || currentStatus === 'idle') && (authorizedPosts || []).length === 0;
 
   if (currentStatus === 'failed') {
     return <div className={styles.error}>Error: {currentError}</div>;
@@ -398,18 +406,18 @@ function PostsList() {
             <SkeletonLoader count={pagination.itemsPerPage} />
           )}
 
-          {!isFirstLoad && paginatedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
+          {!isFirstLoad && authorizedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
             <SkeletonLoader count={pagination.itemsPerPage} />
           )}
 
-          {!isFirstLoad && paginatedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
+          {!isFirstLoad && authorizedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
             <div className={styles.emptyState} onClick={() => navigate('/add')}>
               <FaPlusCircle className={styles.addIcon} />
               <span className={styles.buttonName}>Create New Post</span>
             </div>
           )}
 
-          {!isFirstLoad && paginatedPosts.map(post => {
+          {!isFirstLoad && authorizedPosts.map(post => {
             const canEditOrDelete = !isExternalReadOnly && user && (user.role === 'Admin' || post.userId === user.uid);
             return (
               <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
@@ -449,7 +457,7 @@ function PostsList() {
         </div>
       </div>
 
-      {paginatedPosts.length > 0 && (
+      {(authorizedPosts || []).length > 0 && (
         <PaginationControls
           currentPage={pageParam}
           totalPages={

@@ -286,24 +286,37 @@ export const fetchExternalTotal = createAsyncThunk(
   'posts/fetchExternalTotal',
   async ({ search } = {}, { dispatch, rejectWithValue }) => {
     try {
-      const params = new URLSearchParams({ page: 1, limit: 1 });
-      if (search) params.append('search', search);
-      const res = await fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts?${params}`);
-      if (!res.ok) {
-        if (res.status === 404) return { count: 0, mode: 'external' };
-        // Fallback to counting by fetching all IDs
-        const ids = await dispatch(fetchAllExternalIds({ limit: 50, search })).unwrap();
-        return { count: ids.length, mode: 'external' };
+      const baseUrl = 'https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts';
+      // Try a cheap request to read total from headers
+      const probeParams = new URLSearchParams({ page: 1, limit: 1 });
+      if (search) probeParams.append('search', search);
+      const probeRes = await fetch(`${baseUrl}?${probeParams}`);
+      if (!probeRes.ok) {
+        if (probeRes.status === 404) return { count: 0, mode: 'external' };
+        // If probe failed, attempt a safe paginated count below
+      } else {
+        const totalHeader = probeRes.headers.get('X-Total-Count') || probeRes.headers.get('x-total-count');
+        if (totalHeader) return { count: parseInt(totalHeader, 10), mode: 'external' };
       }
 
-      const totalHeader = res.headers.get('X-Total-Count') || res.headers.get('x-total-count');
-      if (totalHeader) {
-        return { count: parseInt(totalHeader, 10), mode: 'external' };
+      // Fallback: iterate pages in a controlled way (do not call admin-only thunks).
+      // Use a reasonable page size and stop when a short page is received.
+      const perPage = 50;
+      let page = 1;
+      let total = 0;
+      const maxPages = 200; // safety cap to avoid runaway requests
+      while (page <= maxPages) {
+        const params = new URLSearchParams({ page, limit: perPage });
+        if (search) params.append('search', search);
+        const r = await fetch(`${baseUrl}?${params}`);
+        if (!r.ok) break;
+        const data = await r.json();
+        if (!Array.isArray(data) || data.length === 0) break;
+        total += data.length;
+        if (data.length < perPage) break;
+        page += 1;
       }
-
-      // If header not present, fallback to counting IDs via fetchAllExternalIds
-      const ids = await dispatch(fetchAllExternalIds({ limit: 50, search })).unwrap();
-      return { count: ids.length, mode: 'external' };
+      return { count: total, mode: 'external' };
     } catch (err) {
       return rejectWithValue('Failed to fetch external total: ' + err.message);
     }
