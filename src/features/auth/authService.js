@@ -136,24 +136,16 @@ const logout = async () => {
         // Sign out from Firebase Auth
         await signOut(auth);
 
-        // Attempt to clear Google cookies by opening the logout endpoint in a short-lived window
+        // Remove only Google OAuth token keys we stored (avoid opening external pages that may trigger UI)
         try {
-            const w = window.open('https://accounts.google.com/Logout', '_blank', 'noopener,noreferrer,width=500,height=500');
-            if (w) setTimeout(() => w.close(), 800);
+            sessionStorage.removeItem('google_oauth_access_token');
         } catch (e) {
-            // ignore popup blockers
-        }
-
-        // Clear any cached client state that may persist sessions
-        try {
-            sessionStorage.clear();
-        } catch (e) {
-            console.warn('Failed to clear sessionStorage:', e);
+            console.warn('Failed to remove google token from sessionStorage:', e);
         }
         try {
-            localStorage.clear();
+            localStorage.removeItem('google_oauth_access_token');
         } catch (e) {
-            console.warn('Failed to clear localStorage:', e);
+            console.warn('Failed to remove google token from localStorage:', e);
         }
     } catch (err) {
         console.error('Logout failed:', err);

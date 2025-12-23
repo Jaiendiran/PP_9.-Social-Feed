@@ -175,7 +175,7 @@ function AppHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.headerContent}>
-        <h1>Blogger</h1>
+        <h1>Blogyst</h1>
         <UserMenu />
       </div>
     </header>

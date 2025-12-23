@@ -5,6 +5,7 @@
 * An option to add user profile pic during user signup and profile management page. (Done)
 
 * A landing page to the app.
+
 * Add 'Favorites' option and post filtration.
 * A dashboard only for admin to access showcases the reports of the app and its data's.
 * User logs tracker.
@@ -39,7 +40,7 @@ For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse pr
 * Google auth auto logs-in the previous user except asking for the gmail user credentials. (Fixed)
 * Google user's profile is not showing up. (Fixed)
 
-* google sign-in is still not smooth.
+* google sign-in is not smooth.
 
 
 
