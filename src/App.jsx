@@ -141,6 +141,7 @@ function App() {
               <Route path="/landing" element={<LandingPage/>} />
               <Route path="/" element={ <AuthGuard> <Home /> </AuthGuard> } />
               <Route path="/add" element={ <AuthGuard> <PostManager /> </AuthGuard> } />
+              <Route path="/posts" element={<AuthGuard><PostManager /></AuthGuard>} />
               <Route path='/posts/:postId' element={ <AuthGuard> <PostManager /> </AuthGuard> } />
               <Route path="/login" element={<PublicGuard><Login /></PublicGuard>} />
               <Route path="/signup" element={<PublicGuard><Signup /></PublicGuard>} />

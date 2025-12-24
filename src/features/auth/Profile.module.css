@@ -28,9 +28,8 @@
 }
 
 .profileAvatarContainer {
-    width: 84px;
-    height: 84px;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
 }
@@ -58,6 +57,11 @@
     box-shadow: 0 6px 18px rgba(98, 0, 234, 0.12);
     transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
+
+.roleWrapper { margin-top:8px }
+.roleBadge { display:inline-block; padding:4px 10px; border-radius:10px; font-size:0.78rem; font-weight:700; color:#fff; letter-spacing:0.01em; }
+.roleAdmin { background: linear-gradient(90deg, #FF6B6B, #FF3D71); }
+.roleUser { background: linear-gradient(90deg, #6A5ACD, #6366F1); }
 
 .title {
     font-size: 2rem;

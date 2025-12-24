@@ -263,6 +263,12 @@ const Profile = () => {
                         ) : (
                             <div className={styles.profileAvatarPlaceholder}>{initials}</div>
                         )}
+                        {/* Role badge below avatar */}
+                        <div className={styles.roleWrapper}>
+                            <span className={`${styles.roleBadge} ${user?.role === 'Admin' ? styles.roleAdmin : styles.roleUser}`}>
+                                {user?.role || 'User'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 

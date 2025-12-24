@@ -39,6 +39,7 @@ For Full Data Control: Self-host Directus (CMS) behind an NGINX (CDN) reverse pr
 * During the first render of the app after login, the header is missing and only appears after the reload the component. (Fixed)
 * Google auth auto logs-in the previous user except asking for the gmail user credentials. (Fixed)
 * Google user's profile is not showing up. (Fixed)
+* Posts UI is accessible without authentication. (Fixed)
 
 * google sign-in is not smooth.
 
