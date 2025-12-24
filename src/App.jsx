@@ -118,7 +118,7 @@ function App() {
     // Only run this check if Auth is fully initialized
     // This prevents premature logout during the split-second before login completes
     if (isAuthInitialized && isSessionExpired && user) {
-      console.log('Session expired. Saving preferences before logout...');
+      // Save preferences then logout on session expiry
       dispatch(saveUserPreferences({ uid: user.uid, preferences: prefsToSave }))
         .catch(err => console.error('Failed to save preferences on expiry:', err))
         .finally(() => {

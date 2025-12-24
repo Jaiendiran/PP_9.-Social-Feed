@@ -8,12 +8,15 @@ import { auth } from '../../firebase.config';
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import Toast from '../../components/Toast';
+import LoadingSpinner from '../../components/LoadingSpinner';
 import styles from './Profile.module.css';
+import { selectAuthInitialized } from './authSlice';
 
 const Profile = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { user, isLoading } = useSelector((state) => state.auth);
+    const isAuthInitialized = useSelector(selectAuthInitialized);
 
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -51,6 +54,23 @@ const Profile = () => {
             .toUpperCase()
             .slice(0, 2);
     }, [user]);
+
+    const [imgSrc, setImgSrc] = useState(user?.photoURL || '');
+
+    useEffect(() => {
+        if (!user?.photoURL) {
+            setImgSrc('');
+            return;
+        }
+        try {
+            const url = user.photoURL;
+            // Add a small cache-bust when the photoURL changes so updates show immediately
+            const separator = url.includes('?') ? '&' : '?';
+            setImgSrc(`${url}${separator}v=${Date.now()}`);
+        } catch (e) {
+            setImgSrc(user.photoURL);
+        }
+    }, [user?.photoURL]);
 
     useEffect(() => {
         if (user) {
@@ -242,6 +262,11 @@ const Profile = () => {
     };
 
     if (!user) {
+        // If auth hasn't finished initializing, show spinner to avoid flicker
+        if (!isAuthInitialized) {
+            return <div className={styles.container}><LoadingSpinner /></div>;
+        }
+
         return (
             <div className={styles.container}>
                 <div className={styles.message}>Please log in to view your profile.</div>
@@ -258,11 +283,48 @@ const Profile = () => {
                         <p className={styles.subtitle}>Manage your account settings</p>
                     </div>
                     <div className={styles.profileAvatarContainer}>
-                        {user.photoURL ? (
-                            <img src={user.photoURL} alt={user.displayName || 'User avatar'} className={styles.profileAvatar} onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=120'}} />
-                        ) : (
-                            <div className={styles.profileAvatarPlaceholder}>{initials}</div>
-                        )}
+                            {user.photoURL ? (
+                                <a href={user.photoURL} target="_blank" rel="noopener noreferrer">
+                                <img
+                                    src={imgSrc}
+                                    data-src-original={user.photoURL}
+                                    alt={user.displayName || 'User avatar'}
+                                    className={styles.profileAvatar}
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                        const img = e.currentTarget || e.target;
+                                        // track attempts to avoid infinite loop
+                                        const attempts = Number(img.dataset.attempts || 0) + 1;
+                                        img.dataset.attempts = attempts;
+
+                                        const original = img.dataset.srcOriginal || img.dataset.srcOriginal || img.dataset.srcOriginal || img.getAttribute('data-src-original') || img.src;
+                                        if (!img.dataset.srcOriginal) img.dataset.srcOriginal = original;
+
+                                        if (attempts === 1 && /googleusercontent\.com/.test(original)) {
+                                            // Try cleaning googleusercontent sizing suffixes, then try stripped URL
+                                            const cleaned = original.replace(/=s\d+(-c)?(-mo)?/i, '=s192');
+                                            if (cleaned !== original) {
+                                                img.src = cleaned;
+                                                return;
+                                            }
+                                            const stripped = original.split('=s')[0];
+                                            if (stripped && stripped !== original) {
+                                                img.src = stripped;
+                                                return;
+                                            }
+                                        }
+
+                                        // final fallback to gravatar
+                                        img.onerror = null;
+                                        img.src = 'https://www.gravatar.com/avatar/?d=mp&s=120';
+                                    }}
+                                />
+                                </a>
+                            ) : (
+                                <div className={styles.profileAvatarPlaceholder}>{initials}</div>
+                            )}
                         {/* Role badge below avatar */}
                         <div className={styles.roleWrapper}>
                             <span className={`${styles.roleBadge} ${user?.role === 'Admin' ? styles.roleAdmin : styles.roleUser}`}>

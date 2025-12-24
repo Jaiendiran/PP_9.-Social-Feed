@@ -22,7 +22,7 @@ export const useIdleTimer = (timeoutMs = 20 * 60 * 1000) => {
 
     const handleLogout = useCallback(() => {
         if (user) {
-            console.log('Session timed out due to inactivity.');
+            // session timeout: user will be logged out
             dispatch(logout());
         }
     }, [dispatch, user]);

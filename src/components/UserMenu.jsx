@@ -105,6 +105,18 @@ const UserMenu = React.memo(function UserMenu() {
         return null;
     }
 
+    // Robust image src with cache-bust so updates appear; similar logic to Profile.jsx
+    const [imgSrc, setImgSrc] = React.useState(user?.photoURL || '');
+    React.useEffect(() => {
+        if (!user?.photoURL) {
+            setImgSrc('');
+            return;
+        }
+        const url = user.photoURL;
+        const separator = url.includes('?') ? '&' : '?';
+        setImgSrc(`${url}${separator}v=${Date.now()}`);
+    }, [user?.photoURL]);
+
     return (
         <div className={styles.userMenuContainer} ref={menuRef}>
             <button
@@ -115,10 +127,27 @@ const UserMenu = React.memo(function UserMenu() {
             >
                 {user.photoURL ? (
                     <img
-                        src={user.photoURL}
+                        src={imgSrc}
+                        data-src-original={user.photoURL}
                         alt={user.displayName || 'User'}
                         className={styles.avatar}
-                        onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=48'}}
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        onError={(e)=>{
+                            const img = e.currentTarget || e.target;
+                            const attempts = Number(img.dataset.attempts || 0) + 1;
+                            img.dataset.attempts = attempts;
+                            const original = img.getAttribute('data-src-original') || img.src;
+                            if (attempts === 1 && /googleusercontent\.com/.test(original)) {
+                                const cleaned = original.replace(/=s\d+(-c)?(-mo)?/i, '=s192');
+                                if (cleaned !== original) { img.src = cleaned; return; }
+                                const stripped = original.split('=s')[0];
+                                if (stripped && stripped !== original) { img.src = stripped; return; }
+                            }
+                            img.onerror = null;
+                            img.src = 'https://www.gravatar.com/avatar/?d=mp&s=48';
+                        }}
                     />
                 ) : (
                     <div className={styles.avatarPlaceholder}>
@@ -134,10 +163,27 @@ const UserMenu = React.memo(function UserMenu() {
                         <div className={styles.userAvatar}>
                             {user.photoURL ? (
                                 <img
-                                    src={user.photoURL}
+                                    src={imgSrc}
+                                    data-src-original={user.photoURL}
                                     alt={user.displayName || 'User'}
                                     className={styles.userAvatarImage}
-                                    onError={(e)=>{e.target.onerror=null; e.target.src='https://www.gravatar.com/avatar/?d=mp&s=80'}}
+                                    crossOrigin="anonymous"
+                                    referrerPolicy="no-referrer"
+                                    loading="lazy"
+                                    onError={(e)=>{
+                                        const img = e.currentTarget || e.target;
+                                        const attempts = Number(img.dataset.attempts || 0) + 1;
+                                        img.dataset.attempts = attempts;
+                                        const original = img.getAttribute('data-src-original') || img.src;
+                                        if (attempts === 1 && /googleusercontent\.com/.test(original)) {
+                                            const cleaned = original.replace(/=s\d+(-c)?(-mo)?/i, '=s192');
+                                            if (cleaned !== original) { img.src = cleaned; return; }
+                                            const stripped = original.split('=s')[0];
+                                            if (stripped && stripped !== original) { img.src = stripped; return; }
+                                        }
+                                        img.onerror = null;
+                                        img.src = 'https://www.gravatar.com/avatar/?d=mp&s=80';
+                                    }}
                                 />
                             ) : (
                                 <div className={styles.userAvatarPlaceholder}>
