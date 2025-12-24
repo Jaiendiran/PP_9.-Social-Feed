@@ -21,6 +21,7 @@ const Login = lazy(() => import('./features/auth/Login'));
 const Signup = lazy(() => import('./features/auth/Signup'));
 const ForgotPassword = lazy(() => import('./features/auth/ForgotPassword'));
 const Profile = lazy(() => import('./features/auth/Profile'));
+const LandingPage = lazy(() => import('./routes/LandingPage'));
 
 function App() {
   const currentTheme = useSelector(selectTheme);
@@ -137,6 +138,7 @@ function App() {
         <AppHeader />
         <Suspense fallback={<LoadingSpinner size="large" />}>
             <Routes>
+              <Route path="/landing" element={<LandingPage/>} />
               <Route path="/" element={ <AuthGuard> <Home /> </AuthGuard> } />
               <Route path="/add" element={ <AuthGuard> <PostManager /> </AuthGuard> } />
               <Route path='/posts/:postId' element={ <AuthGuard> <PostManager /> </AuthGuard> } />
