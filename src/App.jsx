@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-route
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectTheme, fetchUserPreferences, saveUserPreferences, selectIsInitialized } from './features/preferences/preferencesSlice';
-import { selectUser, selectIsSessionExpired, logout, setUser, setAuthInitialized, selectAuthInitialized, clearSessionExpiry } from './features/auth/authSlice';
+import { selectUser, selectIsSessionExpired, logout, setAuthInitialized, selectAuthInitialized, clearSessionExpiry } from './features/auth/authSlice';
 import { useIdleTimer } from './utils/useIdleTimer';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -137,29 +137,13 @@ function App() {
         <AppHeader />
         <Suspense fallback={<LoadingSpinner size="large" />}>
             <Routes>
-            <Route path="/" element={
-              <AuthGuard>
-                <Home />
-              </AuthGuard>
-            } />
-            <Route path="/add" element={
-              <AuthGuard>
-                <PostManager />
-              </AuthGuard>
-            } />
-            <Route path='/posts/:postId' element={
-              <AuthGuard>
-                <PostManager />
-              </AuthGuard>
-            } />
-            <Route path="/login" element={<PublicGuard><Login /></PublicGuard>} />
-            <Route path="/signup" element={<PublicGuard><Signup /></PublicGuard>} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/profile" element={
-              <AuthGuard>
-                <Profile />
-              </AuthGuard>
-            } />
+              <Route path="/" element={ <AuthGuard> <Home /> </AuthGuard> } />
+              <Route path="/add" element={ <AuthGuard> <PostManager /> </AuthGuard> } />
+              <Route path='/posts/:postId' element={ <AuthGuard> <PostManager /> </AuthGuard> } />
+              <Route path="/login" element={<PublicGuard><Login /></PublicGuard>} />
+              <Route path="/signup" element={<PublicGuard><Signup /></PublicGuard>} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/profile" element={ <AuthGuard><Profile /></AuthGuard> } />
           </Routes>
         </Suspense>
       </ErrorBoundary>
@@ -169,7 +153,7 @@ function App() {
 
 function AppHeader() {
   const location = useLocation();
-  const hideHeaderRoutes = ['/login', '/signup', '/forgot-password'];
+  const hideHeaderRoutes = ['/login', '/signup', '/forgot-password', '/landing'];
   if (hideHeaderRoutes.includes(location.pathname)) return null;
 
   return (
