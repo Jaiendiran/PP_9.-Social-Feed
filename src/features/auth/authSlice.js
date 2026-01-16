@@ -29,13 +29,9 @@ export const login = createAsyncThunk('auth/login', async (user, thunkAPI) => {
     try {
         const userData = await authService.login(user.email, user.password);
         cacheUtils.set(cacheKeys.USER, userData);
-
         return userData;
     } catch (error) {
-        let message =
-            (error.response && error.response.data && error.response.data.message) ||
-            error.message ||
-            error.toString();
+        let message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
 
         if (message.includes('auth/user-not-found') || message.includes('auth/invalid-credential') || message.includes('auth/invalid-email')) {
             message = 'Invalid user info. Please check your email or sign up.';
@@ -52,13 +48,9 @@ export const signup = createAsyncThunk('auth/signup', async (user, thunkAPI) => 
     try {
         const userData = await authService.signup(user.email, user.password, user.name, user.photoURL);
         cacheUtils.set(cacheKeys.USER, userData);
-
         return userData;
     } catch (error) {
-        const message =
-            (error.response && error.response.data && error.response.data.message) ||
-            error.message ||
-            error.toString();
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
         return thunkAPI.rejectWithValue(message);
     }
 });
@@ -68,13 +60,9 @@ export const loginWithGoogle = createAsyncThunk('auth/google', async (_, thunkAP
     try {
         const userData = await authService.loginWithGoogle();
         cacheUtils.set(cacheKeys.USER, userData);
-
         return userData;
     } catch (error) {
-        const message =
-            (error.response && error.response.data && error.response.data.message) ||
-            error.message ||
-            error.toString();
+        const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
         return thunkAPI.rejectWithValue(message);
     }
 });
@@ -82,8 +70,6 @@ export const loginWithGoogle = createAsyncThunk('auth/google', async (_, thunkAP
 // Logout user
 export const logout = createAsyncThunk('auth/logout', async () => {
     await authService.logout();
-
-    // cacheUtils.clear(cacheKeys.USER);
     Object.values(cacheKeys).forEach(key => cacheUtils.clear(key));
 });
 
@@ -91,12 +77,10 @@ export const logout = createAsyncThunk('auth/logout', async () => {
 export const fetchCurrentUser = createAsyncThunk('auth/fetchUser', async (uid, thunkAPI) => {
     try {
         const userData = await authService.getUserDocument(uid);
-
         if (userData) {
             cacheUtils.set(cacheKeys.USER, userData);
             return userData;
         }
-
         return thunkAPI.rejectWithValue('User not found');
     } catch (error) {
         const message = error.message || error.toString();
@@ -109,7 +93,6 @@ export const updateUserProfile = createAsyncThunk('auth/updateProfile', async ({
     try {
         const userData = await authService.updateUserProfile(uid, data);
         cacheUtils.set(cacheKeys.USER, userData);
-
         return userData;
     } catch (error) {
         const message = error.message || error.toString();
@@ -132,6 +115,7 @@ export const authSlice = createSlice({
         },
         setUser: (state, action) => {
             state.user = action.payload;
+            
             if (action.payload) {
                 state.isSessionExpired = false; // Reset expiry on successful user set
                 cacheUtils.set(cacheKeys.USER, action.payload);

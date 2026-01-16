@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../../firebase.config';
 
 const PREFS_DOC_ID = 'settings';
@@ -32,7 +32,7 @@ const saveUserPreferences = async (uid, preferences) => {
             ...preferences,
             updatedAt: Date.now()
         };
-        // Use setDoc with merge: true to create if not exists or update fields
+        // Uses setDoc with merge: true to create if not exists or update fields
         await setDoc(prefsRef, prefsWithTimestamp, { merge: true });
         return prefsWithTimestamp;
     } catch (error) {
@@ -41,9 +41,5 @@ const saveUserPreferences = async (uid, preferences) => {
     }
 };
 
-const preferencesService = {
-    getUserPreferences,
-    saveUserPreferences
-};
-
+const preferencesService = { getUserPreferences, saveUserPreferences };
 export default preferencesService;
