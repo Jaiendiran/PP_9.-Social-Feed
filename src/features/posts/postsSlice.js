@@ -19,8 +19,7 @@ export const fetchInternalPosts = createAsyncThunk(
       } else {
         if (userId) q = query(q, where('userId', '==', userId));
 
-        const useIdSort = sortBy === 'date' && !!userId;
-        const sortField = sortBy === 'title' ? 'title' : (useIdSort ? documentId() : 'createdAt');
+        const sortField = sortBy === 'title' ? 'title' : 'createdAt';
 
         q = query(q, checkBoxOrderBy(sortField, sortOrder));
       }
@@ -36,43 +35,55 @@ export const fetchInternalPosts = createAsyncThunk(
         querySnapshot = await getDocs(q);
       } catch (err) {
         const looksLikeIndexError = /index/i.test(err.message || '');
-        
-        if (looksLikeIndexError && sortBy === 'title' && userId) {
-          let fallbackQ = query(postsRef);
-          
-          if (userId) fallbackQ = query(fallbackQ, where('userId', '==', userId));
-          fallbackQ = query(fallbackQ, orderBy('createdAt', sortOrder));
-          if (cursor) fallbackQ = query(fallbackQ, startAfter(cursor));
-          fallbackQ = query(fallbackQ, limit(limitVal));
 
-          querySnapshot = await getDocs(fallbackQ);
-          querySnapshot.forEach((doc) => {
-            posts.push({ id: doc.id, ...doc.data() });
-          });
+        if (looksLikeIndexError) {
+          // Fallback or re-throw. The existing title fallback was specific.
+          // We can keep the specific title fallback logic if we want, but simpler to just let it fail or handle generically?
+          // The existing code had a specific fallback for title index errors.
+          // Let's preserve the existing Title fallback block structure but logic needs to match variables.
 
-          // Client-side sort for the page by title
-          posts.sort((a, b) => {
-            const A = (a.title || '').toString().toLowerCase();
-            const B = (b.title || '').toString().toLowerCase();
+          if (sortBy === 'title' && userId) {
+            let fallbackQ = query(postsRef);
 
-            if (A < B) return sortOrder === 'asc' ? -1 : 1;
-            if (A > B) return sortOrder === 'asc' ? 1 : -1;
+            if (userId) fallbackQ = query(fallbackQ, where('userId', '==', userId));
+            fallbackQ = query(fallbackQ, orderBy('createdAt', sortOrder));
+            if (cursor) fallbackQ = query(fallbackQ, startAfter(cursor));
+            fallbackQ = query(fallbackQ, limit(limitVal));
 
-            return 0;
-          });
+            querySnapshot = await getDocs(fallbackQ);
+            querySnapshot.forEach((doc) => {
+              posts.push({ id: doc.id, ...doc.data() });
+            });
 
-          if (querySnapshot && querySnapshot.docs && querySnapshot.docs.length > 0) {
-            const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-            lastVisible = lastDoc.data().createdAt;
+            // Client-side sort for the page by title
+            posts.sort((a, b) => {
+              const A = (a.title || '').toString().toLowerCase();
+              const B = (b.title || '').toString().toLowerCase();
+
+              if (A < B) return sortOrder === 'asc' ? -1 : 1;
+              if (A > B) return sortOrder === 'asc' ? 1 : -1;
+
+              return 0;
+            });
+
+            if (querySnapshot && querySnapshot.docs && querySnapshot.docs.length > 0) {
+              // The cursor for next page in fallback mode is tricky.
+              // If we sort by title client side, we can't easily pagination next page via Firestore cursor unless we pull ALL.
+              // But this fallback pulls 'limitVal' sorted by date.
+              // This is an imperfect fallback (pagination might drift).
+              // But let's leave it as is for now, just focused on the main path.
+              const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+              lastVisible = lastDoc.data().createdAt;
+            }
+
+            return {
+              posts,
+              lastVisible, // Value for next page
+              hasMore: posts.length === limitVal,
+              page, // Pass page back for reducer to map cursor
+              mode // Pass mode back to reducer
+            };
           }
-
-          return {
-            posts,
-            lastVisible, // Value for next page
-            hasMore: posts.length === limitVal,
-            page, // Pass page back for reducer to map cursor
-            mode // Pass mode back to reducer
-          };
         }
         throw err;
       }
@@ -85,7 +96,12 @@ export const fetchInternalPosts = createAsyncThunk(
 
         if (querySnapshot.docs.length > 0) {
           const lastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-          lastVisible = lastDoc.data().createdAt;
+          // Correctly choose cursor value based on sortField
+          if (sortBy === 'title') {
+            lastVisible = lastDoc.data().title;
+          } else {
+            lastVisible = lastDoc.data().createdAt;
+          }
         }
       }
 
@@ -247,7 +263,7 @@ export const fetchAllExternalIds = createAsyncThunk(
         page += 1;
         if (page > 1000) break;
       }
-      
+
       return ids;
     } catch (err) {
       return rejectWithValue('Failed to fetch external IDs: ' + err.message);
@@ -265,9 +281,9 @@ export const fetchExternalTotal = createAsyncThunk(
 
       if (search) probeParams.append('search', search);
       const probeRes = await fetch(`${baseUrl}?${probeParams}`);
-      
+
       if (!probeRes.ok) {
-        if (probeRes.status === 404) return { count: 0, mode: 'external'}
+        if (probeRes.status === 404) return { count: 0, mode: 'external' }
       } else {
         const totalHeader = probeRes.headers.get('X-Total-Count') || probeRes.headers.get('x-total-count');
         if (totalHeader) return { count: parseInt(totalHeader, 10), mode: 'external' };
@@ -313,14 +329,14 @@ export const deletePostsInBatches = createAsyncThunk(
       try {
         const state = thunkAPI.getState();
         const user = state.auth?.user;
-        
+
         if (!user || user.role !== 'Admin') {
           thunkAPI.dispatch(postsSlice.actions.finishDeleteProgress({ total: ids.length, processed: 0, successCount: 0, failed: ids.length, failedItems: ids }));
           return thunkAPI.rejectWithValue('Unauthorized');
         }
       } catch (e) { /* proceed and let later checks fail */ }
     }
-    
+
     const total = ids.length;
     const successIds = [];
     const failed = [];
@@ -358,7 +374,7 @@ export const deletePostsInBatches = createAsyncThunk(
             }
 
             thunkAPI.dispatch(postsSlice.actions.updateDeleteProgress({ processed: successIds.length + failed.length, successCount: successIds.length, failureCount: failed.length, failedItems: failed.map(f => f.id) }));
-            
+
             await sleep(75); // small pause between requests
           }
         }
@@ -580,11 +596,11 @@ export const deleteExternalPosts = createAsyncThunk(
       }
 
       await Promise.all(ids.map(id => fetch(`https://693c01eab762a4f15c3f1d36.mockapi.io/blog/posts/${id}`, {
-          method: 'DELETE',
-        }).then(res => {
-          if (!res.ok) throw new Error(`Failed to delete post ${id}`);
-          return res.json();
-        })
+        method: 'DELETE',
+      }).then(res => {
+        if (!res.ok) throw new Error(`Failed to delete post ${id}`);
+        return res.json();
+      })
       ));
       return ids;
     } catch (err) {
@@ -609,7 +625,7 @@ const initialState = postsAdapter.getInitialState({
   internalPosts: [],
   internalStatus: 'idle',
   internalError: null,
-  
+
   createdPagination: {
     lastVisible: null,
     hasMore: false,
@@ -684,7 +700,7 @@ const postsSlice = createSlice({
 
       if (mode === 'created' || !mode) state.createdPagination = { lastVisible: null, hasMore: false, cursors: {} };
       if (mode === 'all' || !mode) state.allPagination = { lastVisible: null, hasMore: false, cursors: {} };
-      
+
       state.internalPosts = [];
       state.internalStatus = 'idle';
       state.internalError = null;

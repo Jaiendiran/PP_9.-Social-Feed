@@ -220,13 +220,13 @@ function PostsList() {
       return;
     }
 
-      // Prevent select-all for read-only external viewers
-      if (filters.option === 'external' && isExternalReadOnly) {
-        setToastMsg('Not authorized to select external posts');
-        setToastType('error');
-        setToastOpen(true);
-        return;
-      }
+    // Prevent select-all for read-only external viewers
+    if (filters.option === 'external' && isExternalReadOnly) {
+      setToastMsg('Not authorized to select external posts');
+      setToastType('error');
+      setToastOpen(true);
+      return;
+    }
 
     try {
       if (filters.option === 'external') {
@@ -295,9 +295,7 @@ function PostsList() {
 
   const isFirstLoad = (currentStatus === 'loading' || currentStatus === 'idle') && (authorizedPosts || []).length === 0;
 
-  if (currentStatus === 'failed') {
-    return <div className={styles.error}>Error: {currentError}</div>;
-  }
+  // (Early return removed to fix hook rules)
 
   // (Empty state check removed)
 
@@ -357,133 +355,140 @@ function PostsList() {
 
   return (
     <div className={styles.postsList}>
-
-
-      <div className={styles.actions}>
-        <div className={styles.rowOneWrapper}>
-          <div className={styles.rowOneLeft}>
-            <HomeBtn />
-            <h2>All Posts</h2>
-          </div>
-          <div className={styles.searchBarWrapper}>
-            <SearchBar onSearch={handleSearch} initialValue={filters.search} />
-          </div>
-        </div>
-        <div className={styles.rowTwoWrapper}>
-            <div className={styles.leftControls}>
-            <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty || isExternalReadOnly} />
-            <NewPostButton disabled={isExternalReadOnly} />
-            {!isExternalReadOnly && !allSelected && selectedIds.size > 0 && (
-              <ClearSelectionButton onClear={clearSelection} />
-            )}
-            {!isExternalReadOnly && selectedIds.size > 0 && (
-              <DeleteSelectedButton onDelete={handleBatchDeleteClick} selectedCount={selectedIds.size} />
-            )}
-            <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
-          </div>
-          <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
-        </div>
-      </div>
-      {deleteProgress && deleteProgress.running && (
-        <DeleteProgressModal
-          progress={deleteProgress}
-          onCancel={() => {
-            // Abort current running thunk if available
-            // RTK dispatch returns an abortable promise; we don't currently store it here.
-            // As a best-effort, dispatch finish to stop UI.
-            dispatch(postsSlice.actions.finishDeleteProgress({ total: deleteProgress.total, processed: deleteProgress.processed, successCount: deleteProgress.success, failed: deleteProgress.failed, failedItems: deleteProgress.failedItems }));
-          }}
-          onRetry={(failedIds) => {
-            if (!failedIds || failedIds.length === 0) return;
-            dispatch(deletePostsInBatches({ ids: failedIds, isExternal: filters.option === 'external' }));
-          }}
-        />
+      {currentStatus === 'failed' && (
+        <div className={styles.error}>Error: {currentError}</div>
       )}
+      {currentStatus === 'failed' ? null : (
+        <>
 
-      <div className={styles.postsContainer}>
-        <div className={styles.postsGrid}>
-          {isFirstLoad && (
-            <SkeletonLoader count={pagination.itemsPerPage} />
-          )}
 
-          {!isFirstLoad && authorizedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
-            <SkeletonLoader count={pagination.itemsPerPage} />
-          )}
-
-          {!isFirstLoad && authorizedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
-            <div className={styles.emptyState} onClick={() => navigate('/add')}>
-              <FaPlusCircle className={styles.addIcon} />
-              <span className={styles.buttonName}>Create New Post</span>
-            </div>
-          )}
-
-          {!isFirstLoad && authorizedPosts.map(post => {
-            const canEditOrDelete = !isExternalReadOnly && user && (user.role === 'Admin' || post.userId === user.uid);
-            return (
-              <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(String(post.id))}
-                  onClick={e => e.stopPropagation()}
-                  onChange={() => toggleSelect(post.id)}
-                  disabled={!canEditOrDelete}
-                  style={{ opacity: canEditOrDelete ? 1 : 0.5, cursor: canEditOrDelete ? 'pointer' : 'not-allowed' }}
-                />
-                <div className={styles.postContent}>
-                  <h3>{post.title}</h3>
-                  <p className={styles.postMsg}>{post.content}</p>
-                  <div className={styles.postMeta}>
-                    <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
-                    <p className={styles.postAuthor}>
-                      <strong>Author: </strong>
-                      {post.isExternal ? 'Public' : (post.authorName || 'Unknown User')}
-                    </p>
-                    </div>
-                </div>
-                {canEditOrDelete && (
-                  <FaTrash
-                    className={styles.deleteIcon}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setToDelete(post.id);
-                      setIsBatchDelete(false);
-                      setConfirmOpen(true);
-                    }}
-                  />
-                )}
+          <div className={styles.actions}>
+            <div className={styles.rowOneWrapper}>
+              <div className={styles.rowOneLeft}>
+                <HomeBtn />
+                <h2>All Posts</h2>
               </div>
-            )
-          })}
-        </div>
-      </div>
+              <div className={styles.searchBarWrapper}>
+                <SearchBar onSearch={handleSearch} initialValue={filters.search} />
+              </div>
+            </div>
+            <div className={styles.rowTwoWrapper}>
+              <div className={styles.leftControls}>
+                <SelectAllButton allSelected={allSelected} onToggle={toggleSelectAll} disabled={isFirstLoad || isEmpty || isExternalReadOnly} />
+                <NewPostButton disabled={isExternalReadOnly} />
+                {!isExternalReadOnly && !allSelected && selectedIds.size > 0 && (
+                  <ClearSelectionButton onClear={clearSelection} />
+                )}
+                {!isExternalReadOnly && selectedIds.size > 0 && (
+                  <DeleteSelectedButton onDelete={handleBatchDeleteClick} selectedCount={selectedIds.size} />
+                )}
+                <SortControls sortBy={filters.sortBy} sortOrder={filters.sortOrder} onSort={handleSort} />
+              </div>
+              <Dropdown selectedOption={filters.option} onChange={handlePostSelection} />
+            </div>
+          </div>
+          {deleteProgress && deleteProgress.running && (
+            <DeleteProgressModal
+              progress={deleteProgress}
+              onCancel={() => {
+                // Abort current running thunk if available
+                // RTK dispatch returns an abortable promise; we don't currently store it here.
+                // As a best-effort, dispatch finish to stop UI.
+                dispatch(postsSlice.actions.finishDeleteProgress({ total: deleteProgress.total, processed: deleteProgress.processed, successCount: deleteProgress.success, failed: deleteProgress.failed, failedItems: deleteProgress.failedItems }));
+              }}
+              onRetry={(failedIds) => {
+                if (!failedIds || failedIds.length === 0) return;
+                dispatch(deletePostsInBatches({ ids: failedIds, isExternal: filters.option === 'external' }));
+              }}
+            />
+          )}
 
-      {(authorizedPosts || []).length > 0 && (
-        <PaginationControls
-          currentPage={pageParam}
-          totalPages={
-            filters.option === 'external'
-              ? Math.max(1, Math.ceil((externalTotal || 0) / pagination.itemsPerPage))
-              : filters.option === 'created'
-                ? Math.max(1, Math.ceil((createdTotal || 0) / pagination.itemsPerPage))
-                : Math.max(1, Math.ceil((allTotal || 0) / pagination.itemsPerPage))
-          }
-          onPageChange={handlePageChange}
-          setSearchParams={setSearchParams}
-          itemsPerPage={pagination.itemsPerPage}
-          onItemsPerPageChange={handleItemsPerPageChange}
-          totalCount={filters.option === 'external' ? externalTotal : (filters.option === 'created' ? createdTotal : allTotal)}
-        />
+          <div className={styles.postsContainer}>
+            <div className={styles.postsGrid}>
+              {isFirstLoad && (
+                <SkeletonLoader count={pagination.itemsPerPage} />
+              )}
+
+              {!isFirstLoad && authorizedPosts.length === 0 && filters.option === 'external' && externalStatus === 'loading' && (
+                <SkeletonLoader count={pagination.itemsPerPage} />
+              )}
+
+              {!isFirstLoad && authorizedPosts.length === 0 && !(filters.option === 'external' && externalStatus === 'loading') && (
+                <div className={styles.emptyState} onClick={() => navigate('/add')}>
+                  <FaPlusCircle className={styles.addIcon} />
+                  <span className={styles.buttonName}>Create New Post</span>
+                </div>
+              )}
+
+              {!isFirstLoad && authorizedPosts.map(post => {
+                const canEditOrDelete = !isExternalReadOnly && user && (user.role === 'Admin' || post.userId === user.uid);
+                return (
+                  <div key={post.id} className={styles.postCard} onClick={() => handlePostClick(post.id)} >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(String(post.id))}
+                      onClick={e => e.stopPropagation()}
+                      onChange={() => toggleSelect(post.id)}
+                      disabled={!canEditOrDelete}
+                      style={{ opacity: canEditOrDelete ? 1 : 0.5, cursor: canEditOrDelete ? 'pointer' : 'not-allowed' }}
+                    />
+                    <div className={styles.postContent}>
+                      <h3>{post.title}</h3>
+                      <p className={styles.postMsg}>{post.content}</p>
+                      <div className={styles.postMeta}>
+                        <p className={styles.postDate}>{FormatDate(post.createdAt)}</p>
+                        <p className={styles.postAuthor}>
+                          <strong>Author: </strong>
+                          {post.isExternal ? 'Public' : (post.authorName || 'Unknown User')}
+                        </p>
+                      </div>
+                    </div>
+                    {canEditOrDelete && (
+                      <FaTrash
+                        className={styles.deleteIcon}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setToDelete(post.id);
+                          setIsBatchDelete(false);
+                          setConfirmOpen(true);
+                        }}
+                      />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {(authorizedPosts || []).length > 0 && (
+            <PaginationControls
+              currentPage={pageParam}
+              totalPages={
+                filters.option === 'external'
+                  ? Math.max(1, Math.ceil((externalTotal || 0) / pagination.itemsPerPage))
+                  : filters.option === 'created'
+                    ? Math.max(1, Math.ceil((createdTotal || 0) / pagination.itemsPerPage))
+                    : Math.max(1, Math.ceil((allTotal || 0) / pagination.itemsPerPage))
+              }
+              onPageChange={handlePageChange}
+              setSearchParams={setSearchParams}
+              itemsPerPage={pagination.itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+              totalCount={filters.option === 'external' ? externalTotal : (filters.option === 'created' ? createdTotal : allTotal)}
+            />
+          )}
+
+          <ConfirmDialog
+            open={confirmOpen}
+            title="Delete post(s)?"
+            message={isBatchDelete ? `Delete ${toDelete?.length} selected posts? This cannot be undone.` : `Delete this post? This cannot be undone.`}
+            onCancel={handleCloseConfirm}
+            onConfirm={handleConfirmDelete}
+          />
+
+          <Toast open={toastOpen} message={toastMsg} type={toastType} onClose={handleCloseToast} />
+        </>
       )}
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title="Delete post(s)?"
-        message={isBatchDelete ? `Delete ${toDelete?.length} selected posts? This cannot be undone.` : `Delete this post? This cannot be undone.`}
-        onCancel={handleCloseConfirm}
-        onConfirm={handleConfirmDelete}
-      />
-
-      <Toast open={toastOpen} message={toastMsg} type={toastType} onClose={handleCloseToast} />
     </div>
   );
 }

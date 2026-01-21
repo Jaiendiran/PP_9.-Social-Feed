@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styles from './PostsControls.module.css';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHome, FaTimes, FaPlus, FaCheckDouble, FaTimesCircle, FaTrash } from 'react-icons/fa';
+import { FaArrowLeft, FaHome, FaTimes, FaPlus, FaTimesCircle, FaTrash } from 'react-icons/fa';
 
 
 // Home button component
