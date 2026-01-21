@@ -91,6 +91,7 @@
 .postCard:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px var(--shadow-color);
+  cursor: pointer;
 }
 
 .postContent {
