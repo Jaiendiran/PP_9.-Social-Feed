@@ -1,0 +1,8 @@
+.backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+.modal{background:#fff;padding:18px;border-radius:8px;max-width:520px;width:96%;box-shadow:0 6px 30px rgba(0,0,0,0.2)}
+.barWrap{background:#eee;border-radius:6px;height:12px;overflow:hidden;margin:12px 0}
+.bar{height:12px;background:linear-gradient(90deg,#4caf50,#81c784);width:0}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.cancel{background:#f44336;color:#fff;border:none;padding:8px 12px;border-radius:4px}
+.retry{background:#1976d2;color:#fff;border:none;padding:8px 12px;border-radius:4px}
+.failList{max-height:180px;overflow:auto;margin-top:8px}

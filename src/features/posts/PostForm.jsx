@@ -1,6 +1,12 @@
+import React, { useRef } from 'react';
 import styles from './PostForm.module.css';
+import useAutosizeTextarea from '../../hooks/useAutoSizeTextArea';
 
 function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
+    const textareaRef = useRef(null);
+
+    useAutosizeTextarea(textareaRef, content);
+
     return (
         <form className={styles.form}>
             <input
@@ -10,15 +16,16 @@ function PostForm({ title, content, isEditing, setTitle, setContent, errors }) {
                 placeholder="Title"
                 readOnly={!isEditing}
             />
-            {errors.title && <p className={styles.error}>{errors.title}</p>}
+            {errors?.title && <p className={styles.error}>{errors.title}</p>}
             <textarea
+                ref={textareaRef}
                 className={styles.textarea}
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 placeholder="Content"
                 readOnly={!isEditing}
             />
-            {errors.content && <p className={styles.error}>{errors.content}</p>}
+            {errors?.content && <p className={styles.error}>{errors.content}</p>}
         </form>
     );
 }

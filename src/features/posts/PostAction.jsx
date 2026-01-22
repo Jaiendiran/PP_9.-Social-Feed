@@ -1,26 +1,26 @@
 import styles from './PostAction.module.css';
 
-function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified, onCancel }) {
+function PostActions({ postId, isEditing, onEditToggle, onSave, onDelete, isModified, onCancel, canEdit = false, canDelete = false }) {
   return (
     <div className={styles.buttonGroup}>
-      {(postId && !isEditing) && (
+      {(postId && !isEditing && canEdit) && (
         <>
-            <button className={styles.button} onClick={onEditToggle}> Edit </button>
+          <button className={styles.button} onClick={onEditToggle}> Edit </button>
         </>
       )}
       {isEditing && (
         <>
           <button
-          className={styles.button}
-          onClick={onSave}
-          disabled={!isModified}
+            className={styles.button}
+            onClick={onSave}
+            disabled={!isModified}
           >
             Save
           </button>
           <button className={styles.button} onClick={onCancel}> Cancel </button>
         </>
       )}
-      {postId && (
+      {postId && canDelete && (
         <button className={styles.deleteButton} onClick={onDelete}>
           Delete
         </button>

@@ -1,6 +1,6 @@
 // Constants for cache configuration
 const CACHE_PREFIX = 'blog_';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
+const CACHE_EXPIRY = 20 * 60 * 1000;
 
 // Cache structure in localStorage
 const cacheStructure = {
@@ -11,7 +11,8 @@ const cacheStructure = {
 
 export const cacheKeys = {
   POSTS: `${CACHE_PREFIX}posts`,
-  USER_PREFERENCES: `${CACHE_PREFIX}preferences`
+  USER_PREFERENCES: `${CACHE_PREFIX}preferences`,
+  USER: `${CACHE_PREFIX}user`
 };
 
 export const cacheUtils = {
@@ -26,7 +27,7 @@ export const cacheUtils = {
   },
 
   // Get data from cache
-  get: (key) => {
+  get: (key, ignoreExpiry = false) => {
     try {
       const cached = localStorage.getItem(key);
       if (!cached) return null;
@@ -34,7 +35,7 @@ export const cacheUtils = {
       const { data, timestamp } = JSON.parse(cached);
       const isExpired = Date.now() - timestamp > CACHE_EXPIRY;
 
-      if (isExpired) {
+      if (isExpired && !ignoreExpiry) {
         localStorage.removeItem(key);
         return null;
       }
@@ -42,6 +43,30 @@ export const cacheUtils = {
       return data;
     } catch (error) {
       console.error('Cache read error:', error);
+      return null;
+    }
+  },
+
+  // Check if key is expired without removing it
+  isExpired: (key) => {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return true; // Treat missing as expired/invalid
+      const { timestamp } = JSON.parse(cached);
+      return Date.now() - timestamp > CACHE_EXPIRY;
+    } catch {
+      return true;
+    }
+  },
+
+  // Get timestamp of when cache was last updated
+  getTimestamp: (key) => {
+    try {
+      const cached = localStorage.getItem(key);
+      if (!cached) return null;
+      const { timestamp } = JSON.parse(cached);
+      return timestamp || null;
+    } catch (error) {
       return null;
     }
   },

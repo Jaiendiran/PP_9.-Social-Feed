@@ -1,13 +1,29 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blogyst</title>
+</head>
+
+<body>
+  <script>
+    (function () {
+      try {
+        var cached = localStorage.getItem('blog_preferences');
+        if (cached) {
+          var parsed = JSON.parse(cached);
+          if (parsed && parsed.data && parsed.data.theme) {
+            document.body.setAttribute('data-theme', parsed.data.theme);
+          }
+        }
+      } catch (e) { }
+    })();
+  </script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

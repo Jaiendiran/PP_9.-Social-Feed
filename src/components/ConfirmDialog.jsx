@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './ConfirmDialog.module.css';
 
-export default function ConfirmDialog({ open, title = 'Confirm', message, onConfirm, onCancel }) {
+function ConfirmDialog({ open, title = 'Confirm', message, onConfirm, onCancel }) {
   if (!open) return null;
 
   return (
@@ -17,3 +17,5 @@ export default function ConfirmDialog({ open, title = 'Confirm', message, onConf
     </div>
   );
 }
+
+export default React.memo(ConfirmDialog);

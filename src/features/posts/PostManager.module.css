@@ -45,9 +45,9 @@ h2 {
 }
 
 /* Mobile CSS */
-@media (max-width: 480px) {
+@media (max-width: 600px) {
   .container {
-    padding: 1rem;
+    margin: 1rem;
   }
 
   .header {

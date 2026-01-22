@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import styles from './Toast.module.css';
 
-export default function Toast({ open, message, type = 'info', onClose, duration = 3500 }) {
+function Toast({ open, message, type = 'info', onClose, duration = 3500 }) {
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => onClose?.(), duration);
@@ -17,3 +17,5 @@ export default function Toast({ open, message, type = 'info', onClose, duration 
     </div>
   );
 }
+
+export default React.memo(Toast);

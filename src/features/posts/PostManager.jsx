@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { savePost, deletePosts, selectPostById, selectPostsStatus, selectPostsError } from './postsSlice';
+import { savePost, deletePosts, createExternalPost, updateExternalPost, deleteExternalPosts, selectPostByIdCombined, selectPostsStatus, selectPostsError, fetchPostById } from './postsSlice';
+import { selectFilters } from '../preferences/preferencesSlice';
+import { selectUser } from '../auth/authSlice';
 import PostForm from './PostForm';
 import PostActions from './PostAction';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -15,21 +17,30 @@ function PostManager() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { postId } = useParams();
-  
-  const post = useSelector(state => selectPostById(state, postId));
+
+  const post = useSelector(state => selectPostByIdCombined(state, postId));
   const status = useSelector(selectPostsStatus);
   const error = useSelector(selectPostsError);
+  const user = useSelector(selectUser);
+  const filters = useSelector(selectFilters);
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isEditing, setIsEditing] = useState(!postId);
   const [errors, setErrors] = useState({});
 
+  const [isDeleting, setIsDeleting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toastOpen, setToastOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [toastType, setToastType] = useState('info'); // 'success' | 'error' | 'info'
 
+
+  useEffect(() => {
+    if (postId && !post && !isDeleting) {
+      dispatch(fetchPostById(postId));
+    }
+  }, [postId, post, dispatch, isDeleting]);
 
   useEffect(() => {
     if (postId && post) {
@@ -38,7 +49,29 @@ function PostManager() {
     }
   }, [postId, post]);
 
-  if (status === 'loading') {
+  // Removed obsolete fetchPosts effect. 
+  // Deep linking requires a dedicated fetchPostById thunk which is outside Phase 2 scope.
+  // Currently relies on list being loaded or aggressive caching.
+
+  // All useCallback hooks MUST be defined before any early returns (React rules of hooks)
+  const handleSetTitle = useCallback((value) => {
+    setTitle(value);
+    setErrors(prev => ({ ...prev, title: '' }));
+  }, []);
+
+  const handleSetContent = useCallback((value) => {
+    setContent(value);
+    setErrors(prev => ({ ...prev, content: '' }));
+  }, []);
+
+  const handleEditToggle = useCallback(() => {
+    setIsEditing(true);
+    setErrors({});
+  }, []);
+
+  // Early returns AFTER all hooks are defined
+  // Only block if loading a specific post
+  if (postId && status === 'loading') {
     return <LoadingSpinner />;
   }
 
@@ -75,19 +108,31 @@ function PostManager() {
     }
 
     const id = postId || Date.now().toString();
-    const newPost = { 
-      id, 
-      title, 
-      content, 
-      createdAt: post ? post.createdAt : new Date().toISOString()
+    const newPost = {
+      id,
+      title,
+      content,
+      userId: post?.userId || user.uid,
+      authorName: post?.authorName || user.displayName || 'Unknown User',
+      createdAt: post ? post.createdAt : new Date().toISOString(),
+      isExternal: post?.isExternal ?? false
     };
 
     try {
-      await dispatch(savePost(newPost)).unwrap();
+      if (newPost.isExternal) {
+        await dispatch(updateExternalPost(newPost)).unwrap();
+      } else {
+        // Create New
+        if (filters.option === 'external') {
+          await dispatch(createExternalPost(newPost)).unwrap();
+        } else {
+          await dispatch(savePost(newPost)).unwrap();
+        }
+      }
       setIsEditing(false);
 
       if (!postId) {
-        navigate('/PP_9.-Social-Feed/', {
+        navigate('/', {
           state: { toast: { message: 'Post created', type: 'success' } },
         });
       } else {
@@ -100,8 +145,10 @@ function PostManager() {
       setToastMsg(err?.message || 'Save failed');
       setToastType('error');
       setToastOpen(true);
+      setIsEditing(true); // Keep editing if save failed
     }
   };
+
 
   const handleCancel = () => {
     if (postId) {
@@ -115,31 +162,23 @@ function PostManager() {
   };
 
 
-  const handleSetTitle = (value) => {
-    setTitle(value);
-    setErrors(prev => ({ ...prev, title: '' }));
-  };
-
-  const handleSetContent = (value) => {
-    setContent(value);
-    setErrors(prev => ({ ...prev, content: '' }));
-  };
-
-  const handleEditToggle = () => {
-    setIsEditing(true);
-    setErrors({});
-  };
 
   const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
-      await dispatch(deletePosts([postId])).unwrap();
-      navigate('/PP_9.-Social-Feed/', {
+      if (post?.isExternal) {
+        await dispatch(deleteExternalPosts([postId])).unwrap();
+      } else {
+        await dispatch(deletePosts([postId])).unwrap();
+      }
+      navigate('/', {
         state: { toast: { message: 'Post deleted', type: 'success' } },
       });
     } catch (err) {
       setToastMsg(err?.message || 'Delete failed');
       setToastType('error');
       setToastOpen(true);
+      setIsDeleting(false); // Reset so user can try again or see error
     } finally {
       setConfirmOpen(false);
     }
@@ -181,6 +220,8 @@ function PostManager() {
           onCancel={handleCancel}
           isModified={title !== post?.title || content !== post?.content}
           status={status}
+          canEdit={user && (user.role === 'Admin' || (post && post.userId === user.uid))}
+          canDelete={user && (user.role === 'Admin' || (post && post.userId === user.uid))}
         />
         <ConfirmDialog
           open={confirmOpen}
@@ -196,4 +237,4 @@ function PostManager() {
   );
 }
 
-export default PostManager;
+export default React.memo(PostManager);

@@ -128,8 +128,14 @@
   flex-grow: 1;
 }
 
+.searchWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .searchInput {
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
   border: 1px solid var(--input-border);
   border-radius: 6px;
   font-size: 1rem;
@@ -146,14 +152,33 @@
   outline: none;
 }
 
+.clearButton {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary, #666);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.clearButton:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: var(--text-primary);
+}
+
 .sortRow {
   display: flex;
-  gap: 1.5rem;
-  margin-top: 1rem;
+  gap: 1.2rem;
+  margin-top: 0;
   font-weight: 500;
   font-size: 1rem;
   color: var(--text-primary);
-  padding-left: 0.5rem;
 }
 
 .sortOption {
@@ -167,14 +192,74 @@
   gap: 0.4rem;
   color: var(--text-primary);
   transition: color 0.2s ease;
+  padding: 0;
 }
 
 .sortOption:hover {
   color: var(--button-primary);
 }
 
+.controlOption {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.controlOption:hover {
+  color: var(--button-primary);
+}
+
+.controlOptionDanger {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-primary);
+  /* Or base danger color? usually text primary then hover danger */
+  transition: color 0.2s ease;
+  padding: 0;
+}
+
+.controlOptionDanger:hover {
+  color: var(--button-danger);
+}
+
+/* Tooltip wrapper for immediate tooltip on hover */
+.tooltipWrapper{position:relative;display:inline-flex}
+.tooltipText{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--background-primary);padding:6px 8px;border-radius:6px;font-size:0.85rem;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,0.18);opacity:0;pointer-events:none}
+.tooltipWrapper:hover .tooltipText{opacity:1;pointer-events:auto}
+
+/* Disabled control styling (greyed out and non-interactive) */
+.disabledControl {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 .sortIcon {
   font-size: 0.9rem;
+}
+
+/* Dropdown CSS */
+.dropdown {
+  background-color: var(--background-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: 6px;
+  min-width: 100px;
+  padding: 0.4rem 0;
 }
 
 /* Mobile CSS */

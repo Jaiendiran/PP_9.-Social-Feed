@@ -1,11 +1,6 @@
-.home {
-  max-width: 800px;
-  margin: auto;
-}
+.home { max-width: 800px; margin: auto; }
 
 /* Mobile CSS */
 @media (max-width: 600px) {
-  .home {
-    padding: 1rem;
-  }
+  .home { padding: 1rem; }
 }
