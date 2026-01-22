@@ -16,7 +16,7 @@ export const HomeBtn = React.memo(function HomeBtn() {
 });
 
 // Back arrow component
-export const BackArrow = React.memo(function BackArrow({ currentPage }) {
+export const BackArrow = React.memo(function BackArrow() {
   const navigate = useNavigate()
 
   return (
@@ -135,6 +135,7 @@ export const Dropdown = React.memo(function Dropdown({ selectedOption, onChange 
 
 // Pagination controls
 export const PaginationControls = React.memo(function PaginationControls({ currentPage, totalPages, onPageChange, setSearchParams, itemsPerPage, onItemsPerPageChange, totalCount }) {
+  
   const handleItemsPerPageChange = useCallback((e) => {
     const value = parseInt(e.target.value, 10);
     onItemsPerPageChange(value);
