@@ -2,7 +2,7 @@
 
 A feature-rich social feed application built with **React 19**, **Redux Toolkit**, and **Firebase**. This application demonstrates a modern, scalable architecture with real-time data synchronization, secure authentication, and a responsive user interface.
 
-### 🔗 Live Demo: https://post-react-blog.web.app/
+### 🔗 Live Demo: https://post-react-blog.web.app/landing
 
 ## � About Blogyst
 Blogyst is a modern social platform designed to foster connection through shared stories and ideas. It provides a seamless and intuitive environment for users to publish content, managing their personal brand with ease. Built with a focus on user experience, Blogyst combines a clean, distraction-free reading interface with powerful content management tools, making it the perfect place for everyone from casual writers to serious content creators to share their voice with the world.
